@@ -23,18 +23,39 @@ interface PresetColor {
 
 // Constants
 const PRESET_COLORS: PresetColor[] = [
-  { name: 'Yamaha Blue', hex: '#0066CC', category: 'brand' },
+  // Yamaha Colors
+  { name: 'Yamaha Blue', hex: '#0062A5', category: 'brand' },
+  { name: 'Yamaha Racing Blue', hex: '#003087', category: 'brand' },
+  { name: 'Yamaha Red', hex: '#D31245', category: 'brand' },
+  
+  // Honda Colors
   { name: 'Honda Red', hex: '#CC0000', category: 'brand' },
-  { name: 'Matte Black', hex: '#1a1a1a', category: 'neutral' },
-  { name: 'Pearl White', hex: '#F5F5F5', category: 'neutral' },
-  { name: 'Racing Yellow', hex: '#FFD700', category: 'vibrant' },
-  { name: 'Neon Green', hex: '#39FF14', category: 'vibrant' },
-  { name: 'Orange Blaze', hex: '#FF6600', category: 'vibrant' },
-  { name: 'Purple Haze', hex: '#9370DB', category: 'vibrant' },
-  { name: 'Gunmetal', hex: '#2C3539', category: 'metallic' },
-  { name: 'Army Green', hex: '#4B5320', category: 'matte' },
-  { name: 'Sky Blue', hex: '#87CEEB', category: 'pastel' },
-  { name: 'Hot Pink', hex: '#FF69B4', category: 'vibrant' }
+  { name: 'Honda Victory Red', hex: '#B50C18', category: 'brand' },
+  { name: 'Honda Pearl White', hex: '#F8F8F8', category: 'brand' },
+  
+  // Popular Matte Colors (trending in PH)
+  { name: 'Matte Black', hex: '#1C1C1C', category: 'matte' },
+  { name: 'Matte Gray', hex: '#4A4A4A', category: 'matte' },
+  { name: 'Matte Army Green', hex: '#50563A', category: 'matte' },
+  { name: 'Matte Navy Blue', hex: '#1B2B3A', category: 'matte' },
+  
+  // Metallic Colors
+  { name: 'Gunmetal Gray', hex: '#2C3539', category: 'metallic' },
+  { name: 'Silver Metallic', hex: '#BFC1C2', category: 'metallic' },
+  { name: 'Gold Metallic', hex: '#D4AF37', category: 'metallic' },
+  { name: 'Bronze Metallic', hex: '#CD7F32', category: 'metallic' },
+  
+  // Vibrant Colors (popular for custom builds)
+  { name: 'Racing Yellow', hex: '#FFC800', category: 'vibrant' },
+  { name: 'Kawasaki Green', hex: '#00A84F', category: 'vibrant' },
+  { name: 'Neon Orange', hex: '#FF5F1F', category: 'vibrant' },
+  { name: 'Electric Blue', hex: '#00D4FF', category: 'vibrant' },
+  
+  // Classic Colors
+  { name: 'Glossy White', hex: '#FFFFFF', category: 'classic' },
+  { name: 'Jet Black', hex: '#0A0A0A', category: 'classic' },
+  { name: 'Deep Red', hex: '#8B0000', category: 'classic' },
+  { name: 'Royal Blue', hex: '#1E3A8A', category: 'classic' }
 ];
 
 const MOTORCYCLE_PARTS = [
@@ -60,6 +81,47 @@ export default function MotoPHCustomizer() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
+  const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);
+
+  // Parts Catalog with Real Philippine Prices
+  const PARTS_CATALOG = [
+    {
+      id: 'body',
+      name: 'Body Panel Set',
+      description: 'Complete fairing set with paint',
+      price: 8500,
+      installTime: '2-3 hours'
+    },
+    {
+      id: 'wheels',
+      name: 'Wheel Rims',
+      description: 'Alloy rims (front + rear)',
+      price: 6500,
+      installTime: '1 hour'
+    },
+    {
+      id: 'seat',
+      name: 'Seat Cover',
+      description: 'Custom leather/vinyl seat',
+      price: 1500,
+      installTime: '30 mins'
+    },
+    {
+      id: 'mirrors',
+      name: 'Side Mirrors',
+      description: 'Pair of aerodynamic mirrors',
+      price: 800,
+      installTime: '15 mins'
+    },
+    {
+      id: 'frame',
+      name: 'Frame Paint',
+      description: 'Professional frame coating',
+      price: 3500,
+      installTime: '4 hours'
+    }
+  ];
 
   // 3D Scene refs
   const sceneRef = useRef<THREE.Scene>();
@@ -191,9 +253,9 @@ export default function MotoPHCustomizer() {
         const scale = 3 / maxDim;
         model.scale.set(scale, scale, scale);
         
-        // Center the model and lift it up
+        // Center the model and position it on the ground
         model.position.x = -center.x * scale;
-        model.position.y = -center.y * scale + 1.5; // Lift higher off floor
+        model.position.y = -center.y * scale + 0.2; // Just slightly above floor for shadow
         model.position.z = -center.z * scale;
         
         console.log('✅ Applied scale:', scale);
@@ -328,12 +390,36 @@ export default function MotoPHCustomizer() {
   };
 
   const downloadScreenshot = () => {
-    if (!rendererRef.current) return;
+    if (!rendererRef.current || !cameraRef.current || !sceneRef.current) return;
+    
+    // Render high-quality image
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
     const dataURL = rendererRef.current.domElement.toDataURL('image/png');
+    
+    // Create download with proper filename
+    const timestamp = new Date().toISOString().slice(0, 10);
     const link = document.createElement('a');
-    link.download = `motoph-custom-${Date.now()}.png`;
+    link.download = `MotoPH-NMAX-Custom-${timestamp}.png`;
     link.href = dataURL;
     link.click();
+    
+    // Optional: Track download for analytics
+    console.log('✅ Design downloaded:', { colors, timestamp });
+  };
+
+  const calculateTotal = () => {
+    return selectedPartsForPurchase.reduce((total, partId) => {
+      const part = PARTS_CATALOG.find(p => p.id === partId);
+      return total + (part?.price || 0);
+    }, 0);
+  };
+
+  const togglePartForPurchase = (partId: string) => {
+    setSelectedPartsForPurchase(prev =>
+      prev.includes(partId)
+        ? prev.filter(id => id !== partId)
+        : [...prev, partId]
+    );
   };
 
   const resetView = () => {
@@ -519,6 +605,87 @@ export default function MotoPHCustomizer() {
                 Apply to {MOTORCYCLE_PARTS.find(p => p.id === selectedPart)?.label}
               </button>
             </div>
+          </div>
+
+          {/* Parts Pricing & Shopping */}
+          <div className="bg-gradient-to-br from-orange-900/30 to-red-900/30 backdrop-blur-md rounded-xl p-6 border border-orange-800/50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-orange-400">💰 Get This Look</h3>
+              <button
+                onClick={() => setShowPricing(!showPricing)}
+                className="text-sm text-orange-400 hover:text-orange-300"
+              >
+                {showPricing ? 'Hide' : 'Show'} Prices
+              </button>
+            </div>
+
+            {showPricing && (
+              <div className="space-y-3">
+                {PARTS_CATALOG.map((part) => {
+                  const isSelected = selectedPartsForPurchase.includes(part.id);
+                  const isCustomized = colors[part.id as keyof BikeColors] !== ({
+                    body: '#CC0000',
+                    wheels: '#1a1a1a',
+                    seat: '#2a2a2a',
+                    mirrors: '#C0C0C0',
+                    frame: '#3a3a3a'
+                  })[part.id as keyof BikeColors];
+
+                  return (
+                    <div
+                      key={part.id}
+                      className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-orange-600/20 border-orange-500'
+                          : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                      }`}
+                      onClick={() => togglePartForPurchase(part.id)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="font-semibold text-white flex items-center gap-2">
+                            {part.name}
+                            {isCustomized && (
+                              <span className="text-xs bg-orange-600 px-2 py-0.5 rounded-full">
+                                Customized
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-400">{part.description}</div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => togglePartForPurchase(part.id)}
+                          className="w-5 h-5 rounded border-gray-600 text-orange-600 focus:ring-orange-500"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-orange-400 font-bold">₱{part.price.toLocaleString()}</span>
+                        <span className="text-gray-500">{part.installTime}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {selectedPartsForPurchase.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-bold text-white">Total:</span>
+                      <span className="text-2xl font-bold text-orange-400">
+                        ₱{calculateTotal().toLocaleString()}
+                      </span>
+                    </div>
+                    <button className="w-full py-3 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold transition-all text-white shadow-lg">
+                      🛒 Request Quote
+                    </button>
+                    <p className="text-xs text-center text-gray-400 mt-2">
+                      Free consultation • Install by certified mechanics
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
