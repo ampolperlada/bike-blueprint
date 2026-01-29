@@ -11,7 +11,7 @@ export const PRESET_COLORS = [
   { name: 'Army Green', hex: '#4B5320', category: 'matte' },
   { name: 'Sky Blue', hex: '#87CEEB', category: 'pastel' },
   { name: 'Hot Pink', hex: '#FF69B4', category: 'vibrant' }
-] as const;
+];  // REMOVED "as const"
 
 export const DEFAULT_COLORS = {
   body: '#FF0000',
@@ -19,4 +19,4 @@ export const DEFAULT_COLORS = {
   seat: '#2a2a2a',
   mirrors: '#C0C0C0',
   frame: '#3a3a3a'
-} as const;
+};

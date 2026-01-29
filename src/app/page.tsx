@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download, RotateCcw, Palette, Maximize2, Info, Sparkles } from 'lucide-react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';           // ← added
 import { PRESET_COLORS, DEFAULT_COLORS } from '@/lib/constants/colors';
 import { MOTORCYCLE_PARTS, type PartId } from '@/lib/constants/parts';
 import { cn } from '@/lib/utils/cn';
@@ -85,174 +86,69 @@ export default function Home() {
     gridHelper.position.y = -0.99;
     scene.add(gridHelper);
 
-    // Build motorcycle
+    // ── Load real NMAX model ──────────────────────────────────────────────
+    const loader = new GLTFLoader();
     const motorcycleParts: Record<string, THREE.Mesh> = {};
 
-    // WHEELS
-    const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 32);
-    const wheelMaterial = new THREE.MeshStandardMaterial({
-      color: colors.wheels,
-      metalness: 0.6,
-      roughness: 0.4
-    });
+    loader.load(
+      '/models/nmax.gltf', // Make sure this file exists in public/models/
+      (gltf) => {
+        const model = gltf.scene;
+        
+        // Scale / position / rotate to match roughly the old primitive view
+        model.scale.set(2, 2, 2);
+        model.position.set(0, -1, 0);
+        model.rotation.y = Math.PI / 4;
+        
+        // Enable shadows + prepare parts for color changing
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            
+            // Clone material so we can modify color independently
+            if (child.material) {
+              child.material = (child.material as THREE.Material).clone();
+            }
 
-    // Front wheel
-    const frontWheel = new THREE.Mesh(wheelGeometry, wheelMaterial.clone());
-    frontWheel.rotation.z = Math.PI / 2;
-    frontWheel.position.set(1.5, -0.4, 0);
-    frontWheel.castShadow = true;
-    scene.add(frontWheel);
-    motorcycleParts.frontWheel = frontWheel;
+            const name = child.name.toLowerCase();
 
-    // Rear wheel
-    const rearWheel = new THREE.Mesh(wheelGeometry, wheelMaterial.clone());
-    rearWheel.rotation.z = Math.PI / 2;
-    rearWheel.position.set(-1.2, -0.4, 0);
-    rearWheel.castShadow = true;
-    scene.add(rearWheel);
-    motorcycleParts.rearWheel = rearWheel;
+            if (name.includes('body') || name.includes('fairing') || 
+                name.includes('panel') || name.includes('cowl')) {
+              motorcycleParts[`body_${child.name}`] = child;
+            }
+            else if (name.includes('wheel') || name.includes('rim') || 
+                     name.includes('tire')) {
+              motorcycleParts[`wheel_${child.name}`] = child;
+            }
+            else if (name.includes('seat') || name.includes('saddle')) {
+              motorcycleParts[`seat_${child.name}`] = child;
+            }
+            else if (name.includes('mirror')) {
+              motorcycleParts[`mirror_${child.name}`] = child;
+            }
+            else if (name.includes('frame') || name.includes('chassis')) {
+              motorcycleParts[`frame_${child.name}`] = child;
+            }
+          }
+        });
 
-    // Wheel spokes
-    const spokeGeometry = new THREE.BoxGeometry(0.02, 0.7, 0.02);
-    const spokeMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
-    
-    [frontWheel, rearWheel].forEach(wheel => {
-      for (let i = 0; i < 8; i++) {
-        const angle = (i * Math.PI) / 4;
-        const spoke = new THREE.Mesh(spokeGeometry, spokeMaterial);
-        spoke.position.y = Math.cos(angle) * 0.35;
-        spoke.position.z = Math.sin(angle) * 0.35;
-        spoke.rotation.z = angle;
-        wheel.add(spoke);
+        scene.add(model);
+        motorcyclePartsRef.current = motorcycleParts;
+        setIsLoading(false);
+        
+        console.log('🏍️ NMAX loaded! Parts found:', Object.keys(motorcycleParts));
+      },
+      (progress) => {
+        const percent = (progress.loaded / progress.total * 100).toFixed(0);
+        console.log(`Loading model: ${percent}%`);
+      },
+      (error) => {
+        console.error('❌ Error loading model:', error);
+        setIsLoading(false);
+        alert('Could not load 3D model. Check console for details.');
       }
-    });
-
-    // FRAME
-    const frameMaterial = new THREE.MeshStandardMaterial({
-      color: colors.frame,
-      metalness: 0.8,
-      roughness: 0.3
-    });
-
-    const frameGeometry = new THREE.CylinderGeometry(0.05, 0.05, 3, 16);
-    const mainFrame = new THREE.Mesh(frameGeometry, frameMaterial.clone());
-    mainFrame.rotation.z = Math.PI / 6;
-    mainFrame.position.set(0, 0, 0);
-    mainFrame.castShadow = true;
-    scene.add(mainFrame);
-    motorcycleParts.mainFrame = mainFrame;
-
-    // BODY PANELS
-    const bodyMaterial = new THREE.MeshStandardMaterial({
-      color: colors.body,
-      metalness: 0.5,
-      roughness: 0.3
-    });
-
-    // Front fairing
-    const frontFairingGeometry = new THREE.BoxGeometry(0.6, 1, 0.8);
-    const frontFairing = new THREE.Mesh(frontFairingGeometry, bodyMaterial.clone());
-    frontFairing.position.set(1.8, 0.2, 0);
-    frontFairing.castShadow = true;
-    scene.add(frontFairing);
-    motorcycleParts.frontFairing = frontFairing;
-
-    // Side panels
-    const sidePanelGeometry = new THREE.BoxGeometry(2, 0.6, 0.05);
-    const leftPanel = new THREE.Mesh(sidePanelGeometry, bodyMaterial.clone());
-    leftPanel.position.set(0, 0, 0.5);
-    leftPanel.castShadow = true;
-    scene.add(leftPanel);
-    motorcycleParts.leftPanel = leftPanel;
-
-    const rightPanel = new THREE.Mesh(sidePanelGeometry, bodyMaterial.clone());
-    rightPanel.position.set(0, 0, -0.5);
-    rightPanel.castShadow = true;
-    scene.add(rightPanel);
-    motorcycleParts.rightPanel = rightPanel;
-
-    // Rear panel
-    const rearPanelGeometry = new THREE.BoxGeometry(0.8, 0.8, 1);
-    const rearPanel = new THREE.Mesh(rearPanelGeometry, bodyMaterial.clone());
-    rearPanel.position.set(-1.5, 0.3, 0);
-    rearPanel.castShadow = true;
-    scene.add(rearPanel);
-    motorcycleParts.rearPanel = rearPanel;
-
-    // SEAT
-    const seatGeometry = new THREE.BoxGeometry(1.2, 0.2, 0.6);
-    const seatMaterial = new THREE.MeshStandardMaterial({
-      color: colors.seat,
-      roughness: 0.8,
-      metalness: 0.1
-    });
-    const seat = new THREE.Mesh(seatGeometry, seatMaterial);
-    seat.position.set(-0.3, 0.7, 0);
-    seat.castShadow = true;
-    scene.add(seat);
-    motorcycleParts.seat = seat;
-
-    // MIRRORS
-    const mirrorMaterial = new THREE.MeshStandardMaterial({
-      color: colors.mirrors,
-      metalness: 0.9,
-      roughness: 0.1
-    });
-
-    const mirrorArmGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
-    
-    // Left mirror
-    const leftMirrorArm = new THREE.Mesh(mirrorArmGeometry, new THREE.MeshStandardMaterial({ color: 0x333333 }));
-    leftMirrorArm.position.set(2, 0.8, 0.3);
-    leftMirrorArm.rotation.z = -Math.PI / 4;
-    scene.add(leftMirrorArm);
-
-    const leftMirrorGeometry = new THREE.BoxGeometry(0.15, 0.1, 0.02);
-    const leftMirror = new THREE.Mesh(leftMirrorGeometry, mirrorMaterial.clone());
-    leftMirror.position.set(2.3, 1.1, 0.3);
-    leftMirror.castShadow = true;
-    scene.add(leftMirror);
-    motorcycleParts.leftMirror = leftMirror;
-
-    // Right mirror
-    const rightMirrorArm = new THREE.Mesh(mirrorArmGeometry, new THREE.MeshStandardMaterial({ color: 0x333333 }));
-    rightMirrorArm.position.set(2, 0.8, -0.3);
-    rightMirrorArm.rotation.z = -Math.PI / 4;
-    scene.add(rightMirrorArm);
-
-    const rightMirrorGeometry = new THREE.BoxGeometry(0.15, 0.1, 0.02);
-    const rightMirror = new THREE.Mesh(rightMirrorGeometry, mirrorMaterial.clone());
-    rightMirror.position.set(2.3, 1.1, -0.3);
-    rightMirror.castShadow = true;
-    scene.add(rightMirror);
-    motorcycleParts.rightMirror = rightMirror;
-
-    // Headlight
-    const headlightGeometry = new THREE.SphereGeometry(0.15, 16, 16);
-    const headlightMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffcc,
-      emissive: 0xffff99,
-      emissiveIntensity: 0.5
-    });
-    const headlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
-    headlight.position.set(2.1, 0.3, 0);
-    scene.add(headlight);
-
-    // Exhaust
-    const exhaustGeometry = new THREE.CylinderGeometry(0.08, 0.1, 0.8, 16);
-    const exhaustMaterial = new THREE.MeshStandardMaterial({
-      color: 0x4a4a4a,
-      metalness: 0.7,
-      roughness: 0.4
-    });
-    const exhaust = new THREE.Mesh(exhaustGeometry, exhaustMaterial);
-    exhaust.rotation.z = Math.PI / 2;
-    exhaust.position.set(-1.5, -0.3, -0.4);
-    exhaust.castShadow = true;
-    scene.add(exhaust);
-
-    motorcyclePartsRef.current = motorcycleParts;
-    setIsLoading(false);
+    );
 
     // Mouse/touch controls
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
@@ -327,25 +223,17 @@ export default function Home() {
     const parts = motorcyclePartsRef.current;
     if (!parts || Object.keys(parts).length === 0) return;
 
-    // Body parts
-    if (parts.frontFairing) parts.frontFairing.material.color.setStyle(colors.body);
-    if (parts.leftPanel) parts.leftPanel.material.color.setStyle(colors.body);
-    if (parts.rightPanel) parts.rightPanel.material.color.setStyle(colors.body);
-    if (parts.rearPanel) parts.rearPanel.material.color.setStyle(colors.body);
+    Object.entries(colors).forEach(([category, hexColor]) => {
+      const matchingParts = Object.entries(parts).filter(([key]) => 
+        key.startsWith(`${category}_`)
+      );
 
-    // Wheels
-    if (parts.frontWheel) parts.frontWheel.material.color.setStyle(colors.wheels);
-    if (parts.rearWheel) parts.rearWheel.material.color.setStyle(colors.wheels);
-
-    // Seat
-    if (parts.seat) parts.seat.material.color.setStyle(colors.seat);
-
-    // Mirrors
-    if (parts.leftMirror) parts.leftMirror.material.color.setStyle(colors.mirrors);
-    if (parts.rightMirror) parts.rightMirror.material.color.setStyle(colors.mirrors);
-
-    // Frame
-    if (parts.mainFrame) parts.mainFrame.material.color.setStyle(colors.frame);
+      matchingParts.forEach(([, mesh]) => {
+        if (mesh.material instanceof THREE.Material) {
+          (mesh.material as THREE.MeshStandardMaterial).color.setStyle(hexColor);
+        }
+      });
+    });
   }, [colors]);
 
   const applyColor = (color: string) => {
@@ -358,7 +246,7 @@ export default function Home() {
   const downloadScreenshot = () => {
     if (!rendererRef.current) return;
     const link = document.createElement('a');
-    link.download = 'my-custom-motorcycle-3d.png';
+    link.download = 'my-custom-nmax-3d.png';
     link.href = rendererRef.current.domElement.toDataURL('image/png');
     link.click();
   };
@@ -393,10 +281,11 @@ export default function Home() {
             <span className="text-5xl">🏍️</span>
             MotoPH 3D Customizer
           </h1>
-          <p className="text-gray-400 text-lg">Rotate, customize, and see your bike in full 3D!</p>
+          <p className="text-gray-400 text-lg">Rotate, customize, and see your NMAX in full 3D!</p>
           <p className="text-yellow-400 text-sm mt-2">✨ Drag to rotate • Mobile friendly</p>
         </div>
 
+        {/* The rest of your UI stays exactly the same */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* 3D Viewer */}
           <div className="lg:col-span-2">
@@ -406,7 +295,7 @@ export default function Home() {
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
                     <div className="text-center">
                       <div className="animate-spin text-6xl mb-4">🏍️</div>
-                      <p className="text-gray-600">Loading 3D Model...</p>
+                      <p className="text-gray-600">Loading real NMAX model...</p>
                     </div>
                   </div>
                 )}
@@ -482,9 +371,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Controls Panel */}
+          {/* Controls Panel — remains unchanged */}
           <div className="space-y-4">
-            {/* Part Selection */}
             <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6">
               <h3 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2">
                 <Palette size={24} className="text-blue-600" />
@@ -571,7 +459,7 @@ export default function Home() {
                 <li>✓ HD screenshot export</li>
               </ul>
               <p className="text-xs text-blue-600 mt-3">
-                💡 Next: Real NMAX 3D model coming soon!
+                💡 Now using real NMAX 3D model!
               </p>
             </div>
           </div>
@@ -580,7 +468,7 @@ export default function Home() {
         {/* Footer */}
         <div className="mt-8 text-center text-gray-400 text-sm">
           <p>Built with Three.js • Created by Christian Paul Perlada</p>
-          <p className="mt-2">3D Prototype - Ready for production! 🎨</p>
+          <p className="mt-2">Real GLTF model loaded • Ready for production! 🎨</p>
         </div>
       </div>
     </div>
