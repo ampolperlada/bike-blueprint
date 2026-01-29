@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download, RotateCcw, Palette, Maximize2, Info, Sparkles } from 'lucide-react';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';           // ← added
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { PRESET_COLORS, DEFAULT_COLORS } from '@/lib/constants/colors';
 import { MOTORCYCLE_PARTS, type PartId } from '@/lib/constants/parts';
 import { cn } from '@/lib/utils/cn';
@@ -86,48 +86,66 @@ export default function Home() {
     gridHelper.position.y = -0.99;
     scene.add(gridHelper);
 
-    // ── Load real NMAX model ──────────────────────────────────────────────
-    const loader = new GLTFLoader();
+    // Build motorcycle - Load real NMAX model
     const motorcycleParts: Record<string, THREE.Mesh> = {};
 
+    const loader = new GLTFLoader();
     loader.load(
-      '/models/nmax.gltf', // Make sure this file exists in public/models/
+      '/models/nmax_motorbike/scene.gltf',
       (gltf) => {
         const model = gltf.scene;
         
-        // Scale / position / rotate to match roughly the old primitive view
-        model.scale.set(2, 2, 2);
+        // Scale and position
+        model.scale.set(1.5, 1.5, 1.5);
         model.position.set(0, -1, 0);
         model.rotation.y = Math.PI / 4;
         
-        // Enable shadows + prepare parts for color changing
+        // Enable shadows and find parts
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = true;
             child.receiveShadow = true;
             
-            // Clone material so we can modify color independently
-            if (child.material) {
-              child.material = (child.material as THREE.Material).clone();
-            }
-
             const name = child.name.toLowerCase();
-
-            if (name.includes('body') || name.includes('fairing') || 
-                name.includes('panel') || name.includes('cowl')) {
+            
+            // Body parts
+            if (name.includes('body') || name.includes('fairing') || name.includes('panel') || name.includes('cowl') || name.includes('cover')) {
+              if (child.material) {
+                child.material = (child.material as THREE.Material).clone();
+                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.body);
+              }
               motorcycleParts[`body_${child.name}`] = child;
             }
-            else if (name.includes('wheel') || name.includes('rim') || 
-                     name.includes('tire')) {
+            // Wheels
+            else if (name.includes('wheel') || name.includes('rim') || name.includes('tire')) {
+              if (child.material) {
+                child.material = (child.material as THREE.Material).clone();
+                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.wheels);
+              }
               motorcycleParts[`wheel_${child.name}`] = child;
             }
+            // Seat
             else if (name.includes('seat') || name.includes('saddle')) {
+              if (child.material) {
+                child.material = (child.material as THREE.Material).clone();
+                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.seat);
+              }
               motorcycleParts[`seat_${child.name}`] = child;
             }
+            // Mirrors
             else if (name.includes('mirror')) {
+              if (child.material) {
+                child.material = (child.material as THREE.Material).clone();
+                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.mirrors);
+              }
               motorcycleParts[`mirror_${child.name}`] = child;
             }
-            else if (name.includes('frame') || name.includes('chassis')) {
+            // Frame
+            else if (name.includes('frame') || name.includes('chassis') || name.includes('fork')) {
+              if (child.material) {
+                child.material = (child.material as THREE.Material).clone();
+                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.frame);
+              }
               motorcycleParts[`frame_${child.name}`] = child;
             }
           }
@@ -137,16 +155,14 @@ export default function Home() {
         motorcyclePartsRef.current = motorcycleParts;
         setIsLoading(false);
         
-        console.log('🏍️ NMAX loaded! Parts found:', Object.keys(motorcycleParts));
+        console.log('🏍️ Model loaded! Parts:', Object.keys(motorcycleParts));
       },
       (progress) => {
-        const percent = (progress.loaded / progress.total * 100).toFixed(0);
-        console.log(`Loading model: ${percent}%`);
+        console.log(`Loading: ${(progress.loaded / progress.total * 100).toFixed(0)}%`);
       },
       (error) => {
         console.error('❌ Error loading model:', error);
         setIsLoading(false);
-        alert('Could not load 3D model. Check console for details.');
       }
     );
 
@@ -223,16 +239,24 @@ export default function Home() {
     const parts = motorcyclePartsRef.current;
     if (!parts || Object.keys(parts).length === 0) return;
 
-    Object.entries(colors).forEach(([category, hexColor]) => {
-      const matchingParts = Object.entries(parts).filter(([key]) => 
-        key.startsWith(`${category}_`)
-      );
-
-      matchingParts.forEach(([, mesh]) => {
-        if (mesh.material instanceof THREE.Material) {
-          (mesh.material as THREE.MeshStandardMaterial).color.setStyle(hexColor);
-        }
-      });
+    Object.entries(parts).forEach(([key, mesh]) => {
+      if (!mesh.material) return;
+      
+      if (key.startsWith('body_')) {
+        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.body);
+      }
+      else if (key.startsWith('wheel_')) {
+        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.wheels);
+      }
+      else if (key.startsWith('seat_')) {
+        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.seat);
+      }
+      else if (key.startsWith('mirror_')) {
+        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.mirrors);
+      }
+      else if (key.startsWith('frame_')) {
+        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.frame);
+      }
     });
   }, [colors]);
 
@@ -246,7 +270,7 @@ export default function Home() {
   const downloadScreenshot = () => {
     if (!rendererRef.current) return;
     const link = document.createElement('a');
-    link.download = 'my-custom-nmax-3d.png';
+    link.download = 'my-custom-motorcycle-3d.png';
     link.href = rendererRef.current.domElement.toDataURL('image/png');
     link.click();
   };
@@ -282,10 +306,9 @@ export default function Home() {
             MotoPH 3D Customizer
           </h1>
           <p className="text-gray-400 text-lg">Rotate, customize, and see your NMAX in full 3D!</p>
-          <p className="text-yellow-400 text-sm mt-2">✨ Drag to rotate • Mobile friendly</p>
+          <p className="text-yellow-400 text-sm mt-2">✨ Real NMAX Model • Drag to rotate</p>
         </div>
 
-        {/* The rest of your UI stays exactly the same */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* 3D Viewer */}
           <div className="lg:col-span-2">
@@ -295,7 +318,7 @@ export default function Home() {
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
                     <div className="text-center">
                       <div className="animate-spin text-6xl mb-4">🏍️</div>
-                      <p className="text-gray-600">Loading real NMAX model...</p>
+                      <p className="text-gray-600">Loading Real NMAX Model...</p>
                     </div>
                   </div>
                 )}
@@ -318,10 +341,10 @@ export default function Home() {
                   <div className="absolute top-16 right-4 bg-white p-4 rounded-lg shadow-lg max-w-xs z-20">
                     <h4 className="font-bold mb-2">3D Viewer Features:</h4>
                     <ul className="text-sm space-y-1">
+                      <li>✓ Real NMAX 3D model</li>
                       <li>✓ Realistic lighting & shadows</li>
                       <li>✓ 360° rotation view</li>
                       <li>✓ Real-time color changes</li>
-                      <li>✓ Separate part customization</li>
                       <li>✓ Mobile-friendly controls</li>
                     </ul>
                   </div>
@@ -371,8 +394,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Controls Panel — remains unchanged */}
+          {/* Controls Panel */}
           <div className="space-y-4">
+            {/* Part Selection */}
             <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6">
               <h3 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2">
                 <Palette size={24} className="text-blue-600" />
@@ -450,16 +474,16 @@ export default function Home() {
 
             {/* Info Box */}
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-2xl p-4">
-              <h4 className="font-bold text-blue-800 mb-2">🚀 Features:</h4>
+              <h4 className="font-bold text-blue-800 mb-2">🚀 Real NMAX Model!</h4>
               <ul className="text-sm text-blue-700 space-y-1">
+                <li>✓ Actual NMAX geometry</li>
                 <li>✓ Full 360° rotation</li>
                 <li>✓ Real-time color updates</li>
                 <li>✓ 5 customizable parts</li>
-                <li>✓ Mobile touch controls</li>
                 <li>✓ HD screenshot export</li>
               </ul>
               <p className="text-xs text-blue-600 mt-3">
-                💡 Now using real NMAX 3D model!
+                💡 Professional 3D model loaded!
               </p>
             </div>
           </div>
@@ -468,7 +492,7 @@ export default function Home() {
         {/* Footer */}
         <div className="mt-8 text-center text-gray-400 text-sm">
           <p>Built with Three.js • Created by Christian Paul Perlada</p>
-          <p className="mt-2">Real GLTF model loaded • Ready for production! 🎨</p>
+          <p className="mt-2">Real NMAX 3D Model • Production Ready! 🎨</p>
         </div>
       </div>
     </div>
