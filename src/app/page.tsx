@@ -1,43 +1,87 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Download, RotateCcw, Palette, Maximize2, Info, Sparkles } from 'lucide-react';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { PRESET_COLORS, DEFAULT_COLORS } from '@/lib/constants/colors';
-import { MOTORCYCLE_PARTS, type PartId } from '@/lib/constants/parts';
-import { cn } from '@/lib/utils/cn';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { Camera, Download, RotateCcw, Palette, Settings, Maximize2, X } from 'lucide-react';
 
-export default function Home() {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const motorcyclePartsRef = useRef<Record<string, THREE.Mesh>>({});
-  const animationFrameRef = useRef<number | null>(null);
-  const isDraggingRef = useRef(false);
-  const previousMouseRef = useRef({ x: 0, y: 0 });
+// Types
+interface BikeColors {
+  body: string;
+  wheels: string;
+  seat: string;
+  mirrors: string;
+  frame: string;
+}
 
-  const [selectedPart, setSelectedPart] = useState<PartId>('body');
-  const [colors, setColors] = useState(DEFAULT_COLORS);
+interface PresetColor {
+  name: string;
+  hex: string;
+  category: string;
+}
+
+// Constants
+const PRESET_COLORS: PresetColor[] = [
+  { name: 'Yamaha Blue', hex: '#0066CC', category: 'brand' },
+  { name: 'Honda Red', hex: '#CC0000', category: 'brand' },
+  { name: 'Matte Black', hex: '#1a1a1a', category: 'neutral' },
+  { name: 'Pearl White', hex: '#F5F5F5', category: 'neutral' },
+  { name: 'Racing Yellow', hex: '#FFD700', category: 'vibrant' },
+  { name: 'Neon Green', hex: '#39FF14', category: 'vibrant' },
+  { name: 'Orange Blaze', hex: '#FF6600', category: 'vibrant' },
+  { name: 'Purple Haze', hex: '#9370DB', category: 'vibrant' },
+  { name: 'Gunmetal', hex: '#2C3539', category: 'metallic' },
+  { name: 'Army Green', hex: '#4B5320', category: 'matte' },
+  { name: 'Sky Blue', hex: '#87CEEB', category: 'pastel' },
+  { name: 'Hot Pink', hex: '#FF69B4', category: 'vibrant' }
+];
+
+const MOTORCYCLE_PARTS = [
+  { id: 'body' as const, label: 'Body Panels', description: 'Main fairings' },
+  { id: 'wheels' as const, label: 'Wheels', description: 'Rims & tires' },
+  { id: 'seat' as const, label: 'Seat', description: 'Saddle cover' },
+  { id: 'mirrors' as const, label: 'Mirrors', description: 'Side mirrors' },
+  { id: 'frame' as const, label: 'Frame', description: 'Chassis' }
+];
+
+export default function MotoPHCustomizer() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [selectedPart, setSelectedPart] = useState<keyof BikeColors>('body');
+  const [colors, setColors] = useState<BikeColors>({
+    body: '#CC0000',
+    wheels: '#1a1a1a',
+    seat: '#2a2a2a',
+    mirrors: '#C0C0C0',
+    frame: '#3a3a3a'
+  });
   const [customColor, setCustomColor] = useState('#FF0000');
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [autoRotate, setAutoRotate] = useState(true);
-  const [showInfo, setShowInfo] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
-  // Initialize Three.js scene
+  // 3D Scene refs
+  const sceneRef = useRef<THREE.Scene>();
+  const cameraRef = useRef<THREE.PerspectiveCamera>();
+  const rendererRef = useRef<THREE.WebGLRenderer>();
+  const controlsRef = useRef<OrbitControls>();
+  const motorcyclePartsRef = useRef<Record<string, THREE.Mesh>>({});
+  const animationFrameRef = useRef<number>();
+
   useEffect(() => {
-    if (!mountRef.current) return;
+    if (!containerRef.current) return;
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f0f0);
+    scene.background = new THREE.Color(0x0a0a0a);
+    scene.fog = new THREE.Fog(0x0a0a0a, 10, 50);
     sceneRef.current = scene;
 
-    // Camera setup
+    // Camera
     const camera = new THREE.PerspectiveCamera(
       45,
-      mountRef.current.clientWidth / mountRef.current.clientHeight,
+      containerRef.current.clientWidth / containerRef.current.clientHeight,
       0.1,
       1000
     );
@@ -45,180 +89,180 @@ export default function Home() {
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+    // Renderer with better quality
+    const renderer = new THREE.WebGLRenderer({ 
+      antialias: true,
+      alpha: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    mountRef.current.appendChild(renderer.domElement);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // Professional lighting setup
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 10, 5);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    scene.add(directionalLight);
+    // Key light (main) - stronger
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    keyLight.position.set(5, 10, 5);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 50;
+    scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    // Fill light - stronger
+    const fillLight = new THREE.DirectionalLight(0x4a90e2, 0.6);
     fillLight.position.set(-5, 5, -5);
     scene.add(fillLight);
 
-    // Ground
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
-    const groundMaterial = new THREE.MeshStandardMaterial({
-      color: 0xe0e0e0,
-      roughness: 0.8,
-      metalness: 0.2
-    });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -1;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    // Rim light - stronger
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    rimLight.position.set(0, 5, -10);
+    scene.add(rimLight);
 
-    // Grid helper
-    const gridHelper = new THREE.GridHelper(20, 20, 0xcccccc, 0xdddddd);
-    gridHelper.position.y = -0.99;
+    // Front light to ensure visibility
+    const frontLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    frontLight.position.set(0, 3, 10);
+    scene.add(frontLight);
+
+    // Accent lights
+    const accentLight1 = new THREE.PointLight(0xff6600, 0.5, 10);
+    accentLight1.position.set(3, 1, 3);
+    scene.add(accentLight1);
+
+    const accentLight2 = new THREE.PointLight(0x0066cc, 0.5, 10);
+    accentLight2.position.set(-3, 1, -3);
+    scene.add(accentLight2);
+
+    // Studio floor
+    const floorGeometry = new THREE.PlaneGeometry(50, 50);
+    const floorMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0f0f0f,
+      metalness: 0.8,
+      roughness: 0.4
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0; // Floor at ground level
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Grid for studio feel
+    const gridHelper = new THREE.GridHelper(20, 40, 0x222222, 0x111111);
+    gridHelper.position.y = 0.01; // Slightly above floor
     scene.add(gridHelper);
 
-    // Build motorcycle - Load real NMAX model
-    const motorcycleParts: Record<string, THREE.Mesh> = {};
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 3;
+    controls.maxDistance = 15;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.5;
+    controlsRef.current = controls;
 
+    // Load NMAX model
     const loader = new GLTFLoader();
     loader.load(
       '/models/nmax_motorbike/scene.gltf',
       (gltf) => {
         const model = gltf.scene;
         
-        // Scale and position
-        model.scale.set(1.5, 1.5, 1.5);
-        model.position.set(0, -1, 0);
-        model.rotation.y = Math.PI / 4;
+        // Calculate bounding box to understand model size
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
         
-        // Enable shadows and find parts
+        console.log('📏 Model size:', size);
+        console.log('📍 Model center:', center);
+        
+        // Scale based on size (adjust to make it about 3 units tall)
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 3 / maxDim;
+        model.scale.set(scale, scale, scale);
+        
+        // Center the model and lift it up
+        model.position.x = -center.x * scale;
+        model.position.y = -center.y * scale + 1.5; // Lift higher off floor
+        model.position.z = -center.z * scale;
+        
+        console.log('✅ Applied scale:', scale);
+        
+        // Enable shadows and collect ALL parts
+        const allParts: string[] = [];
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = true;
             child.receiveShadow = true;
             
-            const name = child.name.toLowerCase();
+            // Enhanced materials with visible fallback
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(mat => {
+                  mat.envMapIntensity = 1.5;
+                  mat.needsUpdate = true;
+                });
+              } else {
+                child.material.envMapIntensity = 1.5;
+                child.material.needsUpdate = true;
+              }
+            }
             
-            // Body parts
-            if (name.includes('body') || name.includes('fairing') || name.includes('panel') || name.includes('cowl') || name.includes('cover')) {
-              if (child.material) {
-                child.material = (child.material as THREE.Material).clone();
-                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.body);
-              }
-              motorcycleParts[`body_${child.name}`] = child;
-            }
-            // Wheels
-            else if (name.includes('wheel') || name.includes('rim') || name.includes('tire')) {
-              if (child.material) {
-                child.material = (child.material as THREE.Material).clone();
-                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.wheels);
-              }
-              motorcycleParts[`wheel_${child.name}`] = child;
-            }
-            // Seat
-            else if (name.includes('seat') || name.includes('saddle')) {
-              if (child.material) {
-                child.material = (child.material as THREE.Material).clone();
-                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.seat);
-              }
-              motorcycleParts[`seat_${child.name}`] = child;
-            }
-            // Mirrors
-            else if (name.includes('mirror')) {
-              if (child.material) {
-                child.material = (child.material as THREE.Material).clone();
-                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.mirrors);
-              }
-              motorcycleParts[`mirror_${child.name}`] = child;
-            }
-            // Frame
-            else if (name.includes('frame') || name.includes('chassis') || name.includes('fork')) {
-              if (child.material) {
-                child.material = (child.material as THREE.Material).clone();
-                (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(colors.frame);
-              }
-              motorcycleParts[`frame_${child.name}`] = child;
+            // Store ALL meshes - we'll figure out which is which
+            const name = child.name.toLowerCase();
+            allParts.push(child.name);
+            motorcyclePartsRef.current[name] = child;
+            
+            // Also try parent names
+            if (child.parent && child.parent.name) {
+              motorcyclePartsRef.current[child.parent.name.toLowerCase()] = child;
             }
           }
         });
 
         scene.add(model);
-        motorcyclePartsRef.current = motorcycleParts;
-        setIsLoading(false);
+        setLoading(false);
         
-        console.log('🏍️ Model loaded! Parts:', Object.keys(motorcycleParts));
+        console.log('✅ NMAX loaded successfully!');
+        console.log('📦 Total meshes found:', allParts.length);
+        console.log('🔍 Mesh names:', allParts);
+        console.log('💾 Stored parts:', Object.keys(motorcyclePartsRef.current));
       },
       (progress) => {
-        console.log(`Loading: ${(progress.loaded / progress.total * 100).toFixed(0)}%`);
+        const percent = (progress.loaded / progress.total) * 100;
+        console.log(`Loading: ${percent.toFixed(0)}%`);
       },
       (error) => {
         console.error('❌ Error loading model:', error);
-        setIsLoading(false);
+        setLoading(false);
       }
     );
 
-    // Mouse/touch controls
-    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      isDraggingRef.current = true;
-      setAutoRotate(false);
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      previousMouseRef.current = { x: clientX, y: clientY };
-    };
-
-    const handlePointerMove = (e: MouseEvent | TouchEvent) => {
-      if (!isDraggingRef.current) return;
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      
-      const deltaX = clientX - previousMouseRef.current.x;
-      
-      const rotationSpeed = 0.005;
-      camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), deltaX * rotationSpeed);
-      
-      previousMouseRef.current = { x: clientX, y: clientY };
-    };
-
-    const handlePointerUp = () => {
-      isDraggingRef.current = false;
-    };
-
-    renderer.domElement.addEventListener('mousedown', handlePointerDown);
-    renderer.domElement.addEventListener('mousemove', handlePointerMove);
-    renderer.domElement.addEventListener('mouseup', handlePointerUp);
-    renderer.domElement.addEventListener('touchstart', handlePointerDown as any);
-    renderer.domElement.addEventListener('touchmove', handlePointerMove as any);
-    renderer.domElement.addEventListener('touchend', handlePointerUp);
-
     // Animation loop
-    const animate = () => {
+    function animate() {
       animationFrameRef.current = requestAnimationFrame(animate);
-      
-      if (autoRotate) {
-        camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.003);
-      }
-      
-      camera.lookAt(0, 0, 0);
+      controls.update();
       renderer.render(scene, camera);
-    };
+    }
     animate();
 
     // Handle resize
-    const handleResize = () => {
-      if (!mountRef.current) return;
-      camera.aspect = mountRef.current.clientWidth / mountRef.current.clientHeight;
+    function handleResize() {
+      if (!containerRef.current) return;
+      camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
-    };
+      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    }
     window.addEventListener('resize', handleResize);
 
     // Cleanup
@@ -227,272 +271,255 @@ export default function Home() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
-        mountRef.current.removeChild(renderer.domElement);
-      }
       renderer.dispose();
+      containerRef.current?.removeChild(renderer.domElement);
     };
   }, []);
 
-  // Update colors when changed
+  // Update colors
   useEffect(() => {
     const parts = motorcyclePartsRef.current;
-    if (!parts || Object.keys(parts).length === 0) return;
-
-    Object.entries(parts).forEach(([key, mesh]) => {
-      if (!mesh.material) return;
-      
-      if (key.startsWith('body_')) {
-        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.body);
-      }
-      else if (key.startsWith('wheel_')) {
-        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.wheels);
-      }
-      else if (key.startsWith('seat_')) {
-        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.seat);
-      }
-      else if (key.startsWith('mirror_')) {
-        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.mirrors);
-      }
-      else if (key.startsWith('frame_')) {
-        (mesh.material as THREE.MeshStandardMaterial).color.setStyle(colors.frame);
+    
+    Object.entries(colors).forEach(([partName, color]) => {
+      const mesh = parts[partName];
+      if (mesh && mesh.material) {
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((mat) => {
+            mat.color.set(color);
+          });
+        } else {
+          mesh.material.color.set(color);
+        }
       }
     });
   }, [colors]);
 
+  // Auto-rotate
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = autoRotate;
+    }
+  }, [autoRotate]);
+
+  // Functions
   const applyColor = (color: string) => {
-    setColors(prev => ({
-      ...prev,
-      [selectedPart]: color
-    }));
+    setColors(prev => ({ ...prev, [selectedPart]: color }));
+  };
+
+  const resetColors = () => {
+    setColors({
+      body: '#CC0000',
+      wheels: '#1a1a1a',
+      seat: '#2a2a2a',
+      mirrors: '#C0C0C0',
+      frame: '#3a3a3a'
+    });
+  };
+
+  const randomizeColors = () => {
+    const getRandomColor = () => PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)].hex;
+    setColors({
+      body: getRandomColor(),
+      wheels: getRandomColor(),
+      seat: getRandomColor(),
+      mirrors: getRandomColor(),
+      frame: getRandomColor()
+    });
   };
 
   const downloadScreenshot = () => {
     if (!rendererRef.current) return;
+    const dataURL = rendererRef.current.domElement.toDataURL('image/png');
     const link = document.createElement('a');
-    link.download = 'my-custom-motorcycle-3d.png';
-    link.href = rendererRef.current.domElement.toDataURL('image/png');
+    link.download = `motoph-custom-${Date.now()}.png`;
+    link.href = dataURL;
     link.click();
   };
 
   const resetView = () => {
-    if (!cameraRef.current) return;
-    cameraRef.current.position.set(5, 3, 8);
-    setAutoRotate(true);
+    if (cameraRef.current && controlsRef.current) {
+      cameraRef.current.position.set(5, 3, 8);
+      controlsRef.current.target.set(0, 0, 0);
+      controlsRef.current.update();
+    }
   };
 
-  const resetColors = () => {
-    setColors(DEFAULT_COLORS);
-  };
-
-  const generateRandomColors = () => {
-    const randomPreset = () => PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)].hex;
-    setColors({
-      body: randomPreset(),
-      wheels: randomPreset(),
-      seat: randomPreset(),
-      mirrors: randomPreset(),
-      frame: randomPreset()
-    });
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.parentElement?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-            <span className="text-5xl">🏍️</span>
-            MotoPH 3D Customizer
-          </h1>
-          <p className="text-gray-400 text-lg">Rotate, customize, and see your NMAX in full 3D!</p>
-          <p className="text-yellow-400 text-sm mt-2">✨ Real NMAX Model • Drag to rotate</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+      {/* Header */}
+      <header className="bg-black/40 backdrop-blur-md border-b border-gray-800">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
+                MotoPH Professional Studio
+              </h1>
+              <p className="text-sm text-gray-400 mt-1">3D Motorcycle Customization Platform</p>
+            </div>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+      </header>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* 3D Viewer */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6">
-              <div className="relative bg-gray-100 rounded-xl overflow-hidden" style={{ height: '500px' }}>
-                {isLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
-                    <div className="text-center">
-                      <div className="animate-spin text-6xl mb-4">🏍️</div>
-                      <p className="text-gray-600">Loading Real NMAX Model...</p>
-                    </div>
-                  </div>
-                )}
-                <div ref={mountRef} className="w-full h-full" />
-                
-                {/* Controls overlay */}
-                <div className="absolute top-4 left-4 bg-black bg-opacity-60 text-white px-3 py-2 rounded-lg text-sm">
-                  <p>🖱️ Drag to rotate</p>
-                  <p className="text-xs text-gray-300 mt-1">Touch: Swipe to spin</p>
+      <div className="container mx-auto p-4 h-[calc(100vh-88px)] flex gap-4">
+        {/* Main 3D Viewer */}
+        <div className="flex-1 relative">
+          <div 
+            ref={containerRef} 
+            className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-gray-800 relative"
+          >
+            {loading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm z-10">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-xl font-semibold">Loading NMAX Model...</p>
+                  <p className="text-sm text-gray-400 mt-2">Professional 3D Studio</p>
                 </div>
-
-                <button
-                  onClick={() => setShowInfo(!showInfo)}
-                  className="absolute top-4 right-4 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
-                >
-                  <Info size={20} />
-                </button>
-
-                {showInfo && (
-                  <div className="absolute top-16 right-4 bg-white p-4 rounded-lg shadow-lg max-w-xs z-20">
-                    <h4 className="font-bold mb-2">3D Viewer Features:</h4>
-                    <ul className="text-sm space-y-1">
-                      <li>✓ Real NMAX 3D model</li>
-                      <li>✓ Realistic lighting & shadows</li>
-                      <li>✓ 360° rotation view</li>
-                      <li>✓ Real-time color changes</li>
-                      <li>✓ Mobile-friendly controls</li>
-                    </ul>
-                  </div>
-                )}
               </div>
+            )}
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 justify-center mt-4">
-                <button
-                  onClick={downloadScreenshot}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 md:px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  <Download size={20} />
-                  <span className="hidden sm:inline">Download</span>
-                </button>
-                <button
-                  onClick={resetView}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 md:px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  <Maximize2 size={20} />
-                  <span className="hidden sm:inline">Reset View</span>
-                </button>
-                <button
-                  onClick={generateRandomColors}
-                  className="flex items-center gap-2 bg-purple-600 text-white px-4 md:px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
-                >
-                  <Sparkles size={20} />
-                  <span className="hidden sm:inline">Random</span>
-                </button>
-                <button
-                  onClick={resetColors}
-                  className="flex items-center gap-2 bg-gray-600 text-white px-4 md:px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
-                >
-                  <RotateCcw size={20} />
-                  <span className="hidden sm:inline">Reset</span>
-                </button>
-                <button
-                  onClick={() => setAutoRotate(!autoRotate)}
-                  className={cn(
-                    'flex items-center gap-2 px-4 md:px-6 py-3 rounded-lg transition-colors font-medium',
-                    autoRotate ? 'bg-orange-600 text-white' : 'bg-gray-300 text-gray-700'
-                  )}
-                >
-                  🔄 <span className="hidden sm:inline">{autoRotate ? 'Auto-On' : 'Auto-Off'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Controls Panel */}
-          <div className="space-y-4">
-            {/* Part Selection */}
-            <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6">
-              <h3 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2">
-                <Palette size={24} className="text-blue-600" />
-                Select Part
-              </h3>
-              <div className="space-y-2">
-                {MOTORCYCLE_PARTS.map(part => (
-                  <button
-                    key={part.id}
-                    onClick={() => setSelectedPart(part.id)}
-                    className={cn(
-                      'w-full text-left px-3 md:px-4 py-2 md:py-3 rounded-lg transition-all text-sm md:text-base',
-                      selectedPart === part.id
-                        ? 'bg-blue-600 text-white shadow-lg scale-105'
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    )}
-                    title={part.description}
-                  >
-                    <span className="text-xl mr-2">{part.icon}</span>
-                    <span className="font-medium">{part.label}</span>
-                    {selectedPart === part.id && <span className="float-right">✓</span>}
-                  </button>
-                ))}
-              </div>
+            {/* Floating Controls */}
+            <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
+              <button
+                onClick={toggleFullscreen}
+                className="p-3 rounded-lg bg-black/60 backdrop-blur-md hover:bg-black/80 transition-all border border-gray-700"
+                title="Fullscreen"
+              >
+                <Maximize2 className="w-5 h-5" />
+              </button>
+              <button
+                onClick={resetView}
+                className="p-3 rounded-lg bg-black/60 backdrop-blur-md hover:bg-black/80 transition-all border border-gray-700"
+                title="Reset Camera"
+              >
+                <Camera className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setAutoRotate(!autoRotate)}
+                className={`p-3 rounded-lg backdrop-blur-md transition-all border border-gray-700 ${
+                  autoRotate ? 'bg-orange-600/80 hover:bg-orange-700/80' : 'bg-black/60 hover:bg-black/80'
+                }`}
+                title="Auto Rotate"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Preset Colors */}
-            <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6">
-              <h3 className="text-lg md:text-xl font-bold mb-4">Popular Colors</h3>
-              <div className="grid grid-cols-3 gap-2 md:gap-3">
-                {PRESET_COLORS.map(color => (
-                  <button
-                    key={color.name}
-                    onClick={() => applyColor(color.hex)}
-                    className="group relative"
-                    title={color.name}
-                  >
-                    <div
-                      className="w-full aspect-square rounded-lg border-2 border-gray-300 hover:border-blue-500 hover:scale-110 transition-all shadow-md"
-                      style={{ backgroundColor: color.hex }}
-                    />
-                    <span className="text-xs text-center block mt-1 text-gray-600 group-hover:text-blue-600 font-medium truncate">
-                      {color.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom Color */}
-            <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6">
-              <h3 className="text-lg md:text-xl font-bold mb-4">Custom Color</h3>
-              <div className="space-y-3">
-                <input
-                  type="color"
-                  value={customColor}
-                  onChange={(e) => setCustomColor(e.target.value)}
-                  className="w-full h-12 md:h-16 rounded-lg cursor-pointer border-2 border-gray-300"
-                />
-                <input
-                  type="text"
-                  value={customColor}
-                  onChange={(e) => setCustomColor(e.target.value)}
-                  placeholder="#FF0000"
-                  className="w-full px-3 md:px-4 py-2 border-2 border-gray-300 rounded-lg font-mono text-sm md:text-base"
-                />
-                <button
-                  onClick={() => applyColor(customColor)}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg hover:shadow-lg transition-all font-medium"
-                >
-                  Apply Custom Color
-                </button>
-              </div>
-            </div>
-
-            {/* Info Box */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-2xl p-4">
-              <h4 className="font-bold text-blue-800 mb-2">🚀 Real NMAX Model!</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>✓ Actual NMAX geometry</li>
-                <li>✓ Full 360° rotation</li>
-                <li>✓ Real-time color updates</li>
-                <li>✓ 5 customizable parts</li>
-                <li>✓ HD screenshot export</li>
-              </ul>
-              <p className="text-xs text-blue-600 mt-3">
-                💡 Professional 3D model loaded!
-              </p>
+            {/* Action Buttons */}
+            <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-3 z-20">
+              <button
+                onClick={downloadScreenshot}
+                className="px-6 py-3 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-semibold flex items-center gap-2 transition-all shadow-lg"
+              >
+                <Download className="w-5 h-5" />
+                <span className="hidden sm:inline">Export HD</span>
+              </button>
+              <button
+                onClick={randomizeColors}
+                className="px-6 py-3 rounded-lg bg-black/60 backdrop-blur-md hover:bg-black/80 font-semibold flex items-center gap-2 transition-all border border-gray-700"
+              >
+                <Palette className="w-5 h-5" />
+                <span className="hidden sm:inline">Randomize</span>
+              </button>
+              <button
+                onClick={resetColors}
+                className="px-6 py-3 rounded-lg bg-black/60 backdrop-blur-md hover:bg-black/80 font-semibold transition-all border border-gray-700"
+              >
+                Reset
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-gray-400 text-sm">
-          <p>Built with Three.js • Created by Christian Paul Perlada</p>
-          <p className="mt-2">Real NMAX 3D Model • Production Ready! 🎨</p>
+        {/* Sidebar Panel */}
+        <div className="w-96 space-y-4 overflow-y-auto">
+          {/* Part Selection */}
+          <div className="bg-gray-900/90 backdrop-blur-md rounded-xl p-6 border border-gray-800">
+            <h3 className="text-lg font-bold mb-4 text-gray-200">Select Component</h3>
+            <div className="space-y-2">
+              {MOTORCYCLE_PARTS.map((part) => (
+                <button
+                  key={part.id}
+                  onClick={() => setSelectedPart(part.id)}
+                  className={`w-full p-4 rounded-lg text-left transition-all border-2 ${
+                    selectedPart === part.id
+                      ? 'bg-gradient-to-r from-orange-600 to-red-600 border-orange-500'
+                      : 'bg-gray-800/50 border-gray-700 hover:bg-gray-800'
+                  }`}
+                >
+                  <div className="font-semibold text-white">{part.label}</div>
+                  <div className="text-sm text-gray-400 mt-1">{part.description}</div>
+                  <div 
+                    className="w-8 h-8 rounded-lg mt-2 border-2 border-white/20"
+                    style={{ backgroundColor: colors[part.id] }}
+                  ></div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Color Presets */}
+          <div className="bg-gray-900/90 backdrop-blur-md rounded-xl p-6 border border-gray-800">
+            <h3 className="text-lg font-bold mb-4 text-gray-200">Color Presets</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {PRESET_COLORS.map((preset) => (
+                <button
+                  key={preset.hex}
+                  onClick={() => applyColor(preset.hex)}
+                  className="group relative aspect-square rounded-lg overflow-hidden border-2 border-gray-700 hover:border-orange-500 transition-all hover:scale-105"
+                  style={{ backgroundColor: preset.hex }}
+                  title={preset.name}
+                >
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-xs font-semibold text-white text-center px-2">
+                      {preset.name}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Color */}
+          <div className="bg-gray-900/90 backdrop-blur-md rounded-xl p-6 border border-gray-800">
+            <h3 className="text-lg font-bold mb-4 text-gray-200">Custom Color</h3>
+            <div className="space-y-3">
+              <input
+                type="color"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="w-full h-16 rounded-lg cursor-pointer border-2 border-gray-700"
+              />
+              <input
+                type="text"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:border-orange-500 focus:outline-none font-mono"
+                placeholder="#FF0000"
+              />
+              <button
+                onClick={() => applyColor(customColor)}
+                className="w-full py-3 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-semibold transition-all"
+              >
+                Apply to {MOTORCYCLE_PARTS.find(p => p.id === selectedPart)?.label}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
