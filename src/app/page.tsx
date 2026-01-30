@@ -83,6 +83,8 @@ export default function MotoPHCustomizer() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);
+  const [debugMode, setDebugMode] = useState(false);
+  const [hoveredMesh, setHoveredMesh] = useState<string | null>(null);
 
   // Parts Catalog with Real Philippine Prices
   const PARTS_CATALOG = [
@@ -134,10 +136,24 @@ export default function MotoPHCustomizer() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Scene setup
+    // Scene setup with gradient background
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a);
-    scene.fog = new THREE.Fog(0x0a0a0a, 10, 50);
+    
+    // Create professional studio background gradient
+    const canvas = document.createElement('canvas');
+    canvas.width = 2;
+    canvas.height = 512;
+    const context = canvas.getContext('2d')!;
+    const gradient = context.createLinearGradient(0, 0, 0, 512);
+    gradient.addColorStop(0, '#1a1a2e'); // Dark blue-black at top
+    gradient.addColorStop(0.5, '#0f0f1e'); // Darker middle
+    gradient.addColorStop(1, '#050510'); // Almost black at bottom
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 2, 512);
+    
+    const backgroundTexture = new THREE.CanvasTexture(canvas);
+    scene.background = backgroundTexture;
+    scene.fog = new THREE.Fog(0x0a0a0a, 15, 50);
     sceneRef.current = scene;
 
     // Camera
@@ -162,38 +178,63 @@ export default function MotoPHCustomizer() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.3;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+    
+    // Create environment map for reflections
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    
+    // Simple gradient environment for reflections
+    const envScene = new THREE.Scene();
+    envScene.background = new THREE.Color(0x1a1a2e);
+    const envTexture = pmremGenerator.fromScene(envScene).texture;
+    scene.environment = envTexture;
 
-    // Professional lighting setup
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    // Professional lighting setup - Studio quality
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
-    // Key light (main) - stronger
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    keyLight.position.set(5, 10, 5);
+    // Key light (main) - from top-front-right
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    keyLight.position.set(8, 12, 6);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.width = 2048;
-    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.mapSize.width = 4096;
+    keyLight.shadow.mapSize.height = 4096;
     keyLight.shadow.camera.near = 0.5;
     keyLight.shadow.camera.far = 50;
+    keyLight.shadow.camera.left = -10;
+    keyLight.shadow.camera.right = 10;
+    keyLight.shadow.camera.top = 10;
+    keyLight.shadow.camera.bottom = -10;
+    keyLight.shadow.bias = -0.001;
     scene.add(keyLight);
 
-    // Fill light - stronger
-    const fillLight = new THREE.DirectionalLight(0x4a90e2, 0.6);
-    fillLight.position.set(-5, 5, -5);
+    // Fill light - from left, softer
+    const fillLight = new THREE.DirectionalLight(0x6ba3ff, 0.5);
+    fillLight.position.set(-8, 6, 4);
     scene.add(fillLight);
 
-    // Rim light - stronger
-    const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    rimLight.position.set(0, 5, -10);
+    // Rim light - from behind, creates edge highlight
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    rimLight.position.set(-3, 8, -8);
     scene.add(rimLight);
 
-    // Front light to ensure visibility
-    const frontLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    frontLight.position.set(0, 3, 10);
-    scene.add(frontLight);
+    // Ground bounce light - simulates floor reflection
+    const bounceLight = new THREE.DirectionalLight(0x4a5568, 0.3);
+    bounceLight.position.set(0, -5, 0);
+    scene.add(bounceLight);
+
+    // Accent lights for drama
+    const accentLight1 = new THREE.PointLight(0xff6600, 1.2, 12);
+    accentLight1.position.set(4, 2, 4);
+    scene.add(accentLight1);
+
+    const accentLight2 = new THREE.PointLight(0x0066ff, 1.0, 12);
+    accentLight2.position.set(-4, 2, -4);
+    scene.add(accentLight2);
 
     // Accent lights
     const accentLight1 = new THREE.PointLight(0xff6600, 0.5, 10);
@@ -204,22 +245,25 @@ export default function MotoPHCustomizer() {
     accentLight2.position.set(-3, 1, -3);
     scene.add(accentLight2);
 
-    // Studio floor
+    // Professional studio floor
     const floorGeometry = new THREE.PlaneGeometry(50, 50);
     const floorMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0f0f0f,
-      metalness: 0.8,
-      roughness: 0.4
+      color: 0x0a0a0a,
+      metalness: 0.6,
+      roughness: 0.8,
+      envMapIntensity: 0.5
     });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = 0; // Floor at ground level
+    floor.position.y = 0;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Grid for studio feel
-    const gridHelper = new THREE.GridHelper(20, 40, 0x222222, 0x111111);
-    gridHelper.position.y = 0.01; // Slightly above floor
+    // Subtle grid for depth perception
+    const gridHelper = new THREE.GridHelper(30, 60, 0x1a1a1a, 0x0d0d0d);
+    gridHelper.position.y = 0.01;
+    gridHelper.material.opacity = 0.5;
+    gridHelper.material.transparent = true;
     scene.add(gridHelper);
 
     // Controls
@@ -255,39 +299,74 @@ export default function MotoPHCustomizer() {
         
         // Center the model and position it on the ground
         model.position.x = -center.x * scale;
-        model.position.y = -center.y * scale + 0.2; // Just slightly above floor for shadow
+        model.position.y = -center.y * scale + 0.15; // Just slightly above floor for shadow
         model.position.z = -center.z * scale;
         
         console.log('✅ Applied scale:', scale);
         
-        // Enable shadows and collect ALL parts
+        // Enhanced material processing and part collection
         const allParts: string[] = [];
+        let materialCount = 0;
+        
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = true;
             child.receiveShadow = true;
             
-            // Enhanced materials with visible fallback
+            // Enhance materials for better appearance
             if (child.material) {
-              if (Array.isArray(child.material)) {
-                child.material.forEach(mat => {
+              const materials = Array.isArray(child.material) ? child.material : [child.material];
+              
+              materials.forEach((mat) => {
+                if (mat instanceof THREE.MeshStandardMaterial) {
+                  // Enhance existing materials
                   mat.envMapIntensity = 1.5;
+                  mat.roughness = Math.min(mat.roughness, 0.6);
+                  mat.metalness = Math.max(mat.metalness, 0.3);
                   mat.needsUpdate = true;
-                });
-              } else {
-                child.material.envMapIntensity = 1.5;
-                child.material.needsUpdate = true;
-              }
+                  materialCount++;
+                }
+              });
             }
             
-            // Store ALL meshes - we'll figure out which is which
+            // Store ALL meshes with multiple naming strategies
             const name = child.name.toLowerCase();
             allParts.push(child.name);
-            motorcyclePartsRef.current[name] = child;
             
-            // Also try parent names
+            // Store by original name
+            if (name) {
+              motorcyclePartsRef.current[name] = child;
+            }
+            
+            // Store by parent name if available
             if (child.parent && child.parent.name) {
-              motorcyclePartsRef.current[child.parent.name.toLowerCase()] = child;
+              const parentName = child.parent.name.toLowerCase();
+              motorcyclePartsRef.current[parentName] = child;
+            }
+            
+            // Try to detect part type by name keywords
+            const detectPartType = (meshName: string) => {
+              const n = meshName.toLowerCase();
+              if (n.includes('body') || n.includes('fairing') || n.includes('panel') || n.includes('cowl')) {
+                motorcyclePartsRef.current['body'] = child;
+              }
+              if (n.includes('wheel') || n.includes('rim') || n.includes('tire')) {
+                motorcyclePartsRef.current['wheels'] = child;
+              }
+              if (n.includes('seat') || n.includes('saddle')) {
+                motorcyclePartsRef.current['seat'] = child;
+              }
+              if (n.includes('mirror')) {
+                motorcyclePartsRef.current['mirrors'] = child;
+              }
+              if (n.includes('frame') || n.includes('chassis') || n.includes('fork')) {
+                motorcyclePartsRef.current['frame'] = child;
+              }
+            };
+            
+            detectPartType(child.name);
+            if (child.parent?.name) {
+              detectPartType(child.parent.name);
             }
           }
         });
@@ -297,8 +376,10 @@ export default function MotoPHCustomizer() {
         
         console.log('✅ NMAX loaded successfully!');
         console.log('📦 Total meshes found:', allParts.length);
+        console.log('🎨 Materials enhanced:', materialCount);
         console.log('🔍 Mesh names:', allParts);
         console.log('💾 Stored parts:', Object.keys(motorcyclePartsRef.current));
+        console.log('🎯 Type this in console to see all parts: Object.keys(motorcyclePartsRef.current)');
       },
       (progress) => {
         const percent = (progress.loaded / progress.total) * 100;
@@ -338,20 +419,41 @@ export default function MotoPHCustomizer() {
     };
   }, []);
 
-  // Update colors
+  // Update colors - improved to handle all mesh types
   useEffect(() => {
     const parts = motorcyclePartsRef.current;
     
     Object.entries(colors).forEach(([partName, color]) => {
+      // Try to find the specific part
       const mesh = parts[partName];
+      
       if (mesh && mesh.material) {
-        if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((mat) => {
+        // Apply color to found part
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        materials.forEach((mat) => {
+          if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
             mat.color.set(color);
-          });
-        } else {
-          mesh.material.color.set(color);
-        }
+            mat.needsUpdate = true;
+          }
+        });
+        console.log(`✅ Applied ${color} to ${partName}`);
+      } else {
+        // If specific part not found, try all stored parts with similar names
+        Object.keys(parts).forEach(key => {
+          if (key.includes(partName) || partName.includes(key)) {
+            const similarMesh = parts[key];
+            if (similarMesh && similarMesh.material) {
+              const materials = Array.isArray(similarMesh.material) ? similarMesh.material : [similarMesh.material];
+              materials.forEach((mat) => {
+                if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+                  mat.color.set(color);
+                  mat.needsUpdate = true;
+                }
+              });
+              console.log(`✅ Applied ${color} to similar part: ${key} (searching for ${partName})`);
+            }
+          }
+        });
       }
     });
   }, [colors]);
@@ -366,6 +468,27 @@ export default function MotoPHCustomizer() {
   // Functions
   const applyColor = (color: string) => {
     setColors(prev => ({ ...prev, [selectedPart]: color }));
+  };
+
+  const testColorOnAllParts = (color: string) => {
+    // Test function - apply color to EVERY mesh to verify color changing works
+    const parts = motorcyclePartsRef.current;
+    let coloredCount = 0;
+    
+    Object.values(parts).forEach((mesh) => {
+      if (mesh && mesh.material) {
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        materials.forEach((mat) => {
+          if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+            mat.color.set(color);
+            mat.needsUpdate = true;
+            coloredCount++;
+          }
+        });
+      }
+    });
+    
+    console.log(`🎨 TEST: Applied ${color} to ${coloredCount} materials`);
   };
 
   const resetColors = () => {
@@ -455,12 +578,116 @@ export default function MotoPHCustomizer() {
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+              title="Settings & Debug"
             >
               <Settings className="w-5 h-5" />
             </button>
           </div>
         </div>
       </header>
+
+      {/* Debug Panel */}
+      {showSettings && (
+        <div className="fixed top-20 right-4 w-96 max-h-[80vh] overflow-y-auto bg-gray-900 border border-gray-700 rounded-xl p-6 z-50 shadow-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold">🔧 Debug Mode</h3>
+            <button
+              onClick={() => setShowSettings(false)}
+              className="p-2 hover:bg-gray-800 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Test Color Buttons */}
+            <div className="p-4 bg-gray-800 rounded-lg">
+              <p className="text-sm font-semibold mb-2">Test: Color ALL Parts</p>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => testColorOnAllParts('#FF0000')}
+                  className="p-3 rounded bg-red-600 hover:bg-red-700 text-xs font-bold"
+                >
+                  RED
+                </button>
+                <button
+                  onClick={() => testColorOnAllParts('#00FF00')}
+                  className="p-3 rounded bg-green-600 hover:bg-green-700 text-xs font-bold"
+                >
+                  GREEN
+                </button>
+                <button
+                  onClick={() => testColorOnAllParts('#0000FF')}
+                  className="p-3 rounded bg-blue-600 hover:bg-blue-700 text-xs font-bold"
+                >
+                  BLUE
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                If these work, color changing is functional!
+              </p>
+            </div>
+
+            {/* Show Available Parts */}
+            <div className="p-4 bg-gray-800 rounded-lg">
+              <p className="text-sm font-semibold mb-2">
+                Available Parts ({Object.keys(motorcyclePartsRef.current).length})
+              </p>
+              <div className="max-h-80 overflow-y-auto text-xs font-mono space-y-1 border border-gray-700 rounded p-2">
+                {Object.keys(motorcyclePartsRef.current).length === 0 ? (
+                  <p className="text-gray-500 italic">Model not loaded yet...</p>
+                ) : (
+                  Object.keys(motorcyclePartsRef.current).map((partName, idx) => (
+                    <div
+                      key={`${partName}-${idx}`}
+                      className="p-1 bg-gray-900 rounded text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer flex items-center justify-between gap-2"
+                      onClick={() => {
+                        console.log('🔍 Part:', partName, motorcyclePartsRef.current[partName]);
+                        // Test color this specific part
+                        const mesh = motorcyclePartsRef.current[partName];
+                        if (mesh && mesh.material) {
+                          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                          materials.forEach((mat) => {
+                            if (mat instanceof THREE.MeshStandardMaterial) {
+                              mat.color.set('#FF00FF'); // Magenta to make it obvious
+                              mat.needsUpdate = true;
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      <span className="truncate">{partName}</span>
+                      <span className="text-gray-500 text-[10px] shrink-0">#{idx}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                ⭐ Click any part to turn it MAGENTA!
+              </p>
+            </div>
+
+            {/* Console Command */}
+            <div className="p-4 bg-orange-900/30 border border-orange-700 rounded-lg">
+              <p className="text-xs font-semibold mb-2 text-orange-400">📋 Show All Parts:</p>
+              <button
+                onClick={() => {
+                  const allParts = Object.keys(motorcyclePartsRef.current);
+                  console.log('🔍 ALL PART NAMES:', allParts);
+                  console.log('📊 Total parts:', allParts.length);
+                  console.log('📝 Full list:', JSON.stringify(allParts, null, 2));
+                }}
+                className="w-full py-2 px-4 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold text-sm"
+              >
+                Print All Parts to Console
+              </button>
+              <p className="text-xs text-gray-400 mt-2">
+                Opens console (F12) and shows all {Object.keys(motorcyclePartsRef.current).length} part names
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto p-4 h-[calc(100vh-88px)] flex gap-4">
         {/* Main 3D Viewer */}
