@@ -236,15 +236,6 @@ export default function MotoPHCustomizer() {
     accentLight2.position.set(-4, 2, -4);
     scene.add(accentLight2);
 
-    // Accent lights
-    const accentLight1 = new THREE.PointLight(0xff6600, 0.5, 10);
-    accentLight1.position.set(3, 1, 3);
-    scene.add(accentLight1);
-
-    const accentLight2 = new THREE.PointLight(0x0066cc, 0.5, 10);
-    accentLight2.position.set(-3, 1, -3);
-    scene.add(accentLight2);
-
     // Professional studio floor
     const floorGeometry = new THREE.PlaneGeometry(50, 50);
     const floorMaterial = new THREE.MeshStandardMaterial({
@@ -297,9 +288,9 @@ export default function MotoPHCustomizer() {
         const scale = 3 / maxDim;
         model.scale.set(scale, scale, scale);
         
-        // Center the model and position it on the ground
+        // Center the model and lift it properly
         model.position.x = -center.x * scale;
-        model.position.y = -center.y * scale + 0.15; // Just slightly above floor for shadow
+        model.position.y = -center.y * scale + 0.8; // Lift higher off ground
         model.position.z = -center.z * scale;
         
         console.log('✅ Applied scale:', scale);
