@@ -85,43 +85,96 @@ export default function MotoPHCustomizer() {
   const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);
   const [debugMode, setDebugMode] = useState(false);
   const [hoveredMesh, setHoveredMesh] = useState<string | null>(null);
+  const [showBeforeAfter, setShowBeforeAfter] = useState(false);
+  const [buildName, setBuildName] = useState('My Custom NMAX');
+  const [savedBuilds, setSavedBuilds] = useState<Array<{name: string, colors: BikeColors, timestamp: string}>>([]);
 
-  // Parts Catalog with Real Philippine Prices
+  // Real Motorcycle Parts Catalog with Brands & Performance
   const PARTS_CATALOG = [
     {
       id: 'body',
       name: 'Body Panel Set',
-      description: 'Complete fairing set with paint',
+      brand: 'OEM Quality',
+      model: 'Full Fairing Kit',
+      description: 'Complete fairing set with professional paint',
       price: 8500,
-      installTime: '2-3 hours'
+      priceRange: { min: 7500, max: 9500 },
+      installTime: '2-3 hours',
+      compatibility: ['NMAX 155', 'NMAX 2020+', 'NMAX V2'],
+      performance: {
+        acceleration: 0,
+        handling: 0,
+        sound: 0,
+        weight: 0
+      }
     },
     {
       id: 'wheels',
-      name: 'Wheel Rims',
-      description: 'Alloy rims (front + rear)',
+      name: 'RCB Mags 13"',
+      brand: 'RCB Racing',
+      model: 'Forged Aluminum',
+      description: 'Lightweight alloy rims (front + rear)',
       price: 6500,
-      installTime: '1 hour'
+      priceRange: { min: 6000, max: 7200 },
+      installTime: '1 hour',
+      compatibility: ['NMAX 155', 'Click 125', 'PCX 150'],
+      performance: {
+        acceleration: 1,
+        handling: 2,
+        sound: 0,
+        weight: -1.5 // kg lighter
+      }
     },
     {
       id: 'seat',
-      name: 'Seat Cover',
-      description: 'Custom leather/vinyl seat',
+      name: 'Custom Seat Cover',
+      brand: 'Premium Leather Co.',
+      model: 'Diamond Stitch',
+      description: 'Genuine leather with diamond pattern',
       price: 1500,
-      installTime: '30 mins'
+      priceRange: { min: 1200, max: 2000 },
+      installTime: '30 mins',
+      compatibility: ['NMAX 155', 'NMAX 2018+'],
+      performance: {
+        acceleration: 0,
+        handling: 0,
+        sound: 0,
+        weight: 0.2
+      }
     },
     {
       id: 'mirrors',
-      name: 'Side Mirrors',
-      description: 'Pair of aerodynamic mirrors',
-      price: 800,
-      installTime: '15 mins'
+      name: 'Aerodynamic Mirrors',
+      brand: 'Rizoma',
+      model: 'Stealth GT',
+      description: 'CNC-machined with integrated LED',
+      price: 2800,
+      priceRange: { min: 2500, max: 3200 },
+      installTime: '15 mins',
+      compatibility: ['Universal - M10 thread'],
+      performance: {
+        acceleration: 0,
+        handling: 0,
+        sound: 0,
+        weight: -0.3
+      }
     },
     {
       id: 'frame',
-      name: 'Frame Paint',
-      description: 'Professional frame coating',
+      name: 'Frame Paint Kit',
+      brand: 'Bosny Professional',
+      model: 'High-Temp Coating',
+      description: 'Heat-resistant frame coating',
       price: 3500,
-      installTime: '4 hours'
+      priceRange: { min: 3000, max: 4000 },
+      installTime: '4 hours',
+      compatibility: ['NMAX 155', 'All models'],
+      performance: {
+        acceleration: 0,
+        handling: 0,
+        sound: 0,
+        weight: 0.5
+      }
     }
   ];
 
@@ -295,9 +348,10 @@ export default function MotoPHCustomizer() {
         
         console.log('✅ Applied scale:', scale);
         
-        // Enhanced material processing and part collection
+        // Enhanced material processing and part collection with MANUAL MAPPING SUPPORT
         const allParts: string[] = [];
         let materialCount = 0;
+        const meshByIndex: Record<number, THREE.Mesh> = {};
         
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
@@ -322,7 +376,9 @@ export default function MotoPHCustomizer() {
             
             // Store ALL meshes with multiple naming strategies
             const name = child.name.toLowerCase();
+            const meshIndex = allParts.length;
             allParts.push(child.name);
+            meshByIndex[meshIndex] = child;
             
             // Store by original name
             if (name) {
@@ -335,23 +391,54 @@ export default function MotoPHCustomizer() {
               motorcyclePartsRef.current[parentName] = child;
             }
             
-            // Try to detect part type by name keywords
+            // Store by index for manual mapping
+            motorcyclePartsRef.current[`mesh_${meshIndex}`] = child;
+            
+            // SMART DETECTION - Try to auto-detect part type by name keywords
             const detectPartType = (meshName: string) => {
               const n = meshName.toLowerCase();
-              if (n.includes('body') || n.includes('fairing') || n.includes('panel') || n.includes('cowl')) {
-                motorcyclePartsRef.current['body'] = child;
+              
+              // Body/Fairing detection
+              if (n.includes('body') || n.includes('fairing') || n.includes('panel') || 
+                  n.includes('cowl') || n.includes('cover') || n.includes('side')) {
+                if (!motorcyclePartsRef.current['body']) {
+                  motorcyclePartsRef.current['body'] = child;
+                  console.log('✅ Auto-detected BODY:', meshName);
+                }
               }
-              if (n.includes('wheel') || n.includes('rim') || n.includes('tire')) {
-                motorcyclePartsRef.current['wheels'] = child;
+              
+              // Wheel detection
+              if (n.includes('wheel') || n.includes('rim') || n.includes('tire') || 
+                  n.includes('mag')) {
+                if (!motorcyclePartsRef.current['wheels']) {
+                  motorcyclePartsRef.current['wheels'] = child;
+                  console.log('✅ Auto-detected WHEELS:', meshName);
+                }
               }
-              if (n.includes('seat') || n.includes('saddle')) {
-                motorcyclePartsRef.current['seat'] = child;
+              
+              // Seat detection
+              if (n.includes('seat') || n.includes('saddle') || n.includes('cushion')) {
+                if (!motorcyclePartsRef.current['seat']) {
+                  motorcyclePartsRef.current['seat'] = child;
+                  console.log('✅ Auto-detected SEAT:', meshName);
+                }
               }
-              if (n.includes('mirror')) {
-                motorcyclePartsRef.current['mirrors'] = child;
+              
+              // Mirror detection
+              if (n.includes('mirror') || n.includes('rearview')) {
+                if (!motorcyclePartsRef.current['mirrors']) {
+                  motorcyclePartsRef.current['mirrors'] = child;
+                  console.log('✅ Auto-detected MIRRORS:', meshName);
+                }
               }
-              if (n.includes('frame') || n.includes('chassis') || n.includes('fork')) {
-                motorcyclePartsRef.current['frame'] = child;
+              
+              // Frame detection
+              if (n.includes('frame') || n.includes('chassis') || n.includes('fork') || 
+                  n.includes('swingarm') || n.includes('structure')) {
+                if (!motorcyclePartsRef.current['frame']) {
+                  motorcyclePartsRef.current['frame'] = child;
+                  console.log('✅ Auto-detected FRAME:', meshName);
+                }
               }
             };
             
@@ -362,15 +449,32 @@ export default function MotoPHCustomizer() {
           }
         });
 
+        // If auto-detection failed, assign first mesh to each part for testing
+        const partTypes = ['body', 'wheels', 'seat', 'mirrors', 'frame'];
+        partTypes.forEach((partType, index) => {
+          if (!motorcyclePartsRef.current[partType] && meshByIndex[index]) {
+            motorcyclePartsRef.current[partType] = meshByIndex[index];
+            console.log(`⚠️ Fallback: Assigned mesh_${index} to ${partType}`);
+          }
+        });
+
         scene.add(model);
         setLoading(false);
         
         console.log('✅ NMAX loaded successfully!');
         console.log('📦 Total meshes found:', allParts.length);
         console.log('🎨 Materials enhanced:', materialCount);
-        console.log('🔍 Mesh names:', allParts);
+        console.log('🔍 All mesh names:', allParts);
         console.log('💾 Stored parts:', Object.keys(motorcyclePartsRef.current));
-        console.log('🎯 Type this in console to see all parts: Object.keys(motorcyclePartsRef.current)');
+        console.log('🎯 Part mappings:', {
+          body: motorcyclePartsRef.current['body']?.name || 'NOT FOUND',
+          wheels: motorcyclePartsRef.current['wheels']?.name || 'NOT FOUND',
+          seat: motorcyclePartsRef.current['seat']?.name || 'NOT FOUND',
+          mirrors: motorcyclePartsRef.current['mirrors']?.name || 'NOT FOUND',
+          frame: motorcyclePartsRef.current['frame']?.name || 'NOT FOUND'
+        });
+        console.log('');
+        console.log('🔧 DEBUG: Click a color button and check if the bike changes color!');
       },
       (progress) => {
         const percent = (progress.loaded / progress.total) * 100;
@@ -536,6 +640,61 @@ export default function MotoPHCustomizer() {
     );
   };
 
+  // Calculate total performance impact
+  const calculatePerformanceImpact = () => {
+    const selected = PARTS_CATALOG.filter(p => selectedPartsForPurchase.includes(p.id));
+    return {
+      acceleration: selected.reduce((sum, p) => sum + p.performance.acceleration, 0),
+      handling: selected.reduce((sum, p) => sum + p.performance.handling, 0),
+      sound: selected.reduce((sum, p) => sum + p.performance.sound, 0),
+      weight: selected.reduce((sum, p) => sum + p.performance.weight, 0)
+    };
+  };
+
+  // Save current build
+  const saveBuild = () => {
+    const newBuild = {
+      name: buildName,
+      colors: { ...colors },
+      timestamp: new Date().toISOString()
+    };
+    setSavedBuilds(prev => [newBuild, ...prev]);
+    
+    // Store in localStorage
+    const builds = JSON.parse(localStorage.getItem('motoph_builds') || '[]');
+    builds.unshift(newBuild);
+    localStorage.setItem('motoph_builds', JSON.stringify(builds.slice(0, 10))); // Keep last 10
+    
+    alert(`✅ Build saved: ${buildName}`);
+  };
+
+  // Share build (copy link with colors encoded)
+  const shareBuild = () => {
+    const colorString = Object.values(colors).join(',');
+    const shareUrl = `${window.location.origin}?colors=${encodeURIComponent(colorString)}&name=${encodeURIComponent(buildName)}`;
+    
+    navigator.clipboard.writeText(shareUrl);
+    alert('🔗 Link copied to clipboard! Share your build!');
+  };
+
+  // Toggle between stock and custom colors
+  const toggleStockView = () => {
+    if (showBeforeAfter) {
+      // Show custom
+      setColors(savedBuilds[0]?.colors || colors);
+    } else {
+      // Show stock
+      setColors({
+        body: '#CC0000',
+        wheels: '#1a1a1a',
+        seat: '#2a2a2a',
+        mirrors: '#C0C0C0',
+        frame: '#3a3a3a'
+      });
+    }
+    setShowBeforeAfter(!showBeforeAfter);
+  };
+
   const resetView = () => {
     if (cameraRef.current && controlsRef.current) {
       cameraRef.current.position.set(5, 3, 8);
@@ -622,39 +781,65 @@ export default function MotoPHCustomizer() {
             {/* Show Available Parts */}
             <div className="p-4 bg-gray-800 rounded-lg">
               <p className="text-sm font-semibold mb-2">
-                Available Parts ({Object.keys(motorcyclePartsRef.current).length})
+                Manual Mesh Mapping
+              </p>
+              <div className="space-y-2 text-xs">
+                <p className="text-gray-400">
+                  Click a mesh below, then click which part type it is:
+                </p>
+                {['body', 'wheels', 'seat', 'mirrors', 'frame'].map((partType) => {
+                  const currentMesh = motorcyclePartsRef.current[partType];
+                  return (
+                    <div key={partType} className="p-2 bg-gray-900 rounded">
+                      <div className="font-semibold text-orange-400 mb-1 capitalize">
+                        {partType}
+                      </div>
+                      <div className="text-gray-500 text-[10px]">
+                        Current: {currentMesh?.name || 'Not mapped'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* All Meshes List */}
+            <div className="p-4 bg-gray-800 rounded-lg">
+              <p className="text-sm font-semibold mb-2">
+                All Meshes ({Object.keys(motorcyclePartsRef.current).filter(k => k.startsWith('mesh_')).length})
               </p>
               <div className="max-h-80 overflow-y-auto text-xs font-mono space-y-1 border border-gray-700 rounded p-2">
                 {Object.keys(motorcyclePartsRef.current).length === 0 ? (
                   <p className="text-gray-500 italic">Model not loaded yet...</p>
                 ) : (
-                  Object.keys(motorcyclePartsRef.current).map((partName, idx) => (
-                    <div
-                      key={`${partName}-${idx}`}
-                      className="p-1 bg-gray-900 rounded text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer flex items-center justify-between gap-2"
-                      onClick={() => {
-                        console.log('🔍 Part:', partName, motorcyclePartsRef.current[partName]);
-                        // Test color this specific part
-                        const mesh = motorcyclePartsRef.current[partName];
-                        if (mesh && mesh.material) {
-                          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-                          materials.forEach((mat) => {
-                            if (mat instanceof THREE.MeshStandardMaterial) {
-                              mat.color.set('#FF00FF'); // Magenta to make it obvious
-                              mat.needsUpdate = true;
-                            }
-                          });
-                        }
-                      }}
-                    >
-                      <span className="truncate">{partName}</span>
-                      <span className="text-gray-500 text-[10px] shrink-0">#{idx}</span>
-                    </div>
-                  ))
+                  Object.entries(motorcyclePartsRef.current)
+                    .filter(([key]) => key.startsWith('mesh_'))
+                    .map(([key, mesh]) => (
+                      <div
+                        key={key}
+                        className="p-2 bg-gray-900 rounded text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer"
+                        onClick={() => {
+                          console.log('🔍 Mesh:', key, mesh.name, mesh);
+                          // Test color this specific part
+                          if (mesh && mesh.material) {
+                            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                            materials.forEach((mat) => {
+                              if (mat instanceof THREE.MeshStandardMaterial) {
+                                mat.color.set('#FF00FF'); // Magenta to make it obvious
+                                mat.needsUpdate = true;
+                              }
+                            });
+                          }
+                        }}
+                      >
+                        <div className="font-semibold">{key}</div>
+                        <div className="text-gray-500 text-[10px]">{mesh.name || 'unnamed'}</div>
+                      </div>
+                    ))
                 )}
               </div>
               <p className="text-xs text-gray-400 mt-2">
-                ⭐ Click any part to turn it MAGENTA!
+                ⭐ Click any mesh to turn it MAGENTA and see which part it is!
               </p>
             </div>
 
@@ -725,7 +910,7 @@ export default function MotoPHCustomizer() {
             </div>
 
             {/* Action Buttons */}
-            <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-3 z-20">
+            <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-3 z-20 flex-wrap">
               <button
                 onClick={downloadScreenshot}
                 className="px-6 py-3 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-semibold flex items-center gap-2 transition-all shadow-lg"
@@ -734,11 +919,33 @@ export default function MotoPHCustomizer() {
                 <span className="hidden sm:inline">Export HD</span>
               </button>
               <button
+                onClick={toggleStockView}
+                className={`px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all border-2 ${
+                  showBeforeAfter 
+                    ? 'bg-green-600 border-green-500 hover:bg-green-700' 
+                    : 'bg-black/60 backdrop-blur-md border-gray-700 hover:bg-black/80'
+                }`}
+              >
+                <span className="hidden sm:inline">{showBeforeAfter ? 'Custom' : 'Stock'}</span>
+              </button>
+              <button
+                onClick={saveBuild}
+                className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 font-semibold transition-all shadow-lg"
+              >
+                💾 Save
+              </button>
+              <button
+                onClick={shareBuild}
+                className="px-6 py-3 rounded-lg bg-purple-600 hover:bg-purple-700 font-semibold transition-all shadow-lg"
+              >
+                🔗 Share
+              </button>
+              <button
                 onClick={randomizeColors}
                 className="px-6 py-3 rounded-lg bg-black/60 backdrop-blur-md hover:bg-black/80 font-semibold flex items-center gap-2 transition-all border border-gray-700"
               >
                 <Palette className="w-5 h-5" />
-                <span className="hidden sm:inline">Randomize</span>
+                <span className="hidden sm:inline">Random</span>
               </button>
               <button
                 onClick={resetColors}
@@ -825,15 +1032,15 @@ export default function MotoPHCustomizer() {
             </div>
           </div>
 
-          {/* Parts Pricing & Shopping */}
+          {/* Parts Pricing & Shopping - ENHANCED */}
           <div className="bg-gradient-to-br from-orange-900/30 to-red-900/30 backdrop-blur-md rounded-xl p-6 border border-orange-800/50">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-orange-400">💰 Get This Look</h3>
+              <h3 className="text-lg font-bold text-orange-400">💰 Build Your NMAX</h3>
               <button
                 onClick={() => setShowPricing(!showPricing)}
                 className="text-sm text-orange-400 hover:text-orange-300"
               >
-                {showPricing ? 'Hide' : 'Show'} Prices
+                {showPricing ? 'Hide' : 'Show'} Parts
               </button>
             </div>
 
@@ -860,36 +1067,124 @@ export default function MotoPHCustomizer() {
                       onClick={() => togglePartForPurchase(part.id)}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <div className="font-semibold text-white flex items-center gap-2">
-                            {part.name}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-white">{part.name}</span>
                             {isCustomized && (
                               <span className="text-xs bg-orange-600 px-2 py-0.5 rounded-full">
-                                Customized
+                                Custom
                               </span>
                             )}
                           </div>
+                          <div className="text-xs text-orange-400 font-semibold mb-1">
+                            {part.brand} • {part.model}
+                          </div>
                           <div className="text-sm text-gray-400">{part.description}</div>
+                          
+                          {/* Compatibility */}
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {part.compatibility.map((model, idx) => (
+                              <span key={idx} className="text-xs bg-green-900/30 text-green-400 px-2 py-0.5 rounded border border-green-700">
+                                ✔ {model}
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Performance Impact */}
+                          {(part.performance.acceleration !== 0 || 
+                            part.performance.handling !== 0 || 
+                            part.performance.sound !== 0 || 
+                            part.performance.weight !== 0) && (
+                            <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
+                              {part.performance.acceleration !== 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span>⚡</span>
+                                  <span className={part.performance.acceleration > 0 ? 'text-green-400' : 'text-red-400'}>
+                                    {part.performance.acceleration > 0 ? '+' : ''}{part.performance.acceleration}
+                                  </span>
+                                </div>
+                              )}
+                              {part.performance.handling !== 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span>🛞</span>
+                                  <span className={part.performance.handling > 0 ? 'text-green-400' : 'text-red-400'}>
+                                    {part.performance.handling > 0 ? '+' : ''}{part.performance.handling}
+                                  </span>
+                                </div>
+                              )}
+                              {part.performance.weight !== 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span>⚖</span>
+                                  <span className={part.performance.weight < 0 ? 'text-green-400' : 'text-orange-400'}>
+                                    {part.performance.weight > 0 ? '+' : ''}{part.performance.weight}kg
+                                  </span>
+                                </div>
+                              )}
+                              {part.performance.sound !== 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span>🔊</span>
+                                  <span className="text-blue-400">
+                                    {part.performance.sound > 0 ? 'Loud' : 'Quiet'}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => togglePartForPurchase(part.id)}
-                          className="w-5 h-5 rounded border-gray-600 text-orange-600 focus:ring-orange-500"
+                          className="w-5 h-5 rounded border-gray-600 text-orange-600 focus:ring-orange-500 mt-1"
                         />
                       </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-orange-400 font-bold">₱{part.price.toLocaleString()}</span>
+                      
+                      <div className="flex justify-between items-center text-sm mt-2 pt-2 border-t border-gray-700">
+                        <span className="text-orange-400 font-bold">
+                          ₱{part.priceRange.min.toLocaleString()} - ₱{part.priceRange.max.toLocaleString()}
+                        </span>
                         <span className="text-gray-500">{part.installTime}</span>
                       </div>
                     </div>
                   );
                 })}
 
+                {/* Total Build Cost */}
                 {selectedPartsForPurchase.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className="mt-4 pt-4 border-t border-orange-700">
+                    {/* Performance Summary */}
+                    <div className="mb-3 p-3 bg-gray-900/50 rounded-lg">
+                      <p className="text-xs font-semibold text-gray-400 mb-2">PERFORMANCE IMPACT</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {calculatePerformanceImpact().acceleration !== 0 && (
+                          <div className="flex items-center gap-2">
+                            <span>⚡ Acceleration:</span>
+                            <span className={calculatePerformanceImpact().acceleration > 0 ? 'text-green-400 font-bold' : 'text-red-400'}>
+                              {calculatePerformanceImpact().acceleration > 0 ? '+' : ''}{calculatePerformanceImpact().acceleration}
+                            </span>
+                          </div>
+                        )}
+                        {calculatePerformanceImpact().handling !== 0 && (
+                          <div className="flex items-center gap-2">
+                            <span>🛞 Handling:</span>
+                            <span className={calculatePerformanceImpact().handling > 0 ? 'text-green-400 font-bold' : 'text-red-400'}>
+                              {calculatePerformanceImpact().handling > 0 ? '+' : ''}{calculatePerformanceImpact().handling}
+                            </span>
+                          </div>
+                        )}
+                        {calculatePerformanceImpact().weight !== 0 && (
+                          <div className="flex items-center gap-2">
+                            <span>⚖ Weight:</span>
+                            <span className={calculatePerformanceImpact().weight < 0 ? 'text-green-400 font-bold' : 'text-orange-400'}>
+                              {calculatePerformanceImpact().weight > 0 ? '+' : ''}{calculatePerformanceImpact().weight.toFixed(1)}kg
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="flex justify-between items-center mb-3">
-                      <span className="font-bold text-white">Total:</span>
+                      <span className="font-bold text-white">BUILD TOTAL:</span>
                       <span className="text-2xl font-bold text-orange-400">
                         ₱{calculateTotal().toLocaleString()}
                       </span>
