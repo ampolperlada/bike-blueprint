@@ -1,22 +1,37 @@
-export const PRESET_COLORS = [
-  { name: 'Yamaha Blue', hex: '#0066CC', category: 'brand' },
-  { name: 'Honda Red', hex: '#CC0000', category: 'brand' },
-  { name: 'Matte Black', hex: '#1a1a1a', category: 'neutral' },
-  { name: 'Pearl White', hex: '#F5F5F5', category: 'neutral' },
-  { name: 'Racing Yellow', hex: '#FFD700', category: 'vibrant' },
-  { name: 'Neon Green', hex: '#39FF14', category: 'vibrant' },
-  { name: 'Orange Blaze', hex: '#FF6600', category: 'vibrant' },
-  { name: 'Purple Haze', hex: '#9370DB', category: 'vibrant' },
-  { name: 'Silver', hex: '#C0C0C0', category: 'metallic' },
-  { name: 'Army Green', hex: '#4B5320', category: 'matte' },
-  { name: 'Sky Blue', hex: '#87CEEB', category: 'pastel' },
-  { name: 'Hot Pink', hex: '#FF69B4', category: 'vibrant' }
-];  // REMOVED "as const"
+import { PresetColor } from '@/types/parts';
 
-export const DEFAULT_COLORS = {
-  body: '#FF0000',
-  wheels: '#1a1a1a',
-  seat: '#2a2a2a',
-  mirrors: '#C0C0C0',
-  frame: '#3a3a3a'
-};
+export const PRESET_COLORS: PresetColor[] = [
+  // Yamaha Brand Colors
+  { name: 'Yamaha Blue', hex: '#0062A5', category: 'brand' },
+  { name: 'Yamaha Racing Blue', hex: '#003087', category: 'brand' },
+  { name: 'Yamaha Red', hex: '#D31245', category: 'brand' },
+  
+  // Honda Brand Colors
+  { name: 'Honda Red', hex: '#CC0000', category: 'brand' },
+  { name: 'Honda Victory Red', hex: '#B50C18', category: 'brand' },
+  { name: 'Honda Pearl White', hex: '#F8F8F8', category: 'brand' },
+  
+  // Matte Colors (Trending in PH)
+  { name: 'Matte Black', hex: '#1C1C1C', category: 'matte' },
+  { name: 'Matte Gray', hex: '#4A4A4A', category: 'matte' },
+  { name: 'Matte Army Green', hex: '#50563A', category: 'matte' },
+  { name: 'Matte Navy Blue', hex: '#1B2B3A', category: 'matte' },
+  
+  // Metallic Colors
+  { name: 'Gunmetal Gray', hex: '#2C3539', category: 'metallic' },
+  { name: 'Silver Metallic', hex: '#BFC1C2', category: 'metallic' },
+  { name: 'Gold Metallic', hex: '#D4AF37', category: 'metallic' },
+  { name: 'Bronze Metallic', hex: '#CD7F32', category: 'metallic' },
+  
+  // Vibrant Colors (Popular for custom builds)
+  { name: 'Racing Yellow', hex: '#FFC800', category: 'vibrant' },
+  { name: 'Kawasaki Green', hex: '#00A84F', category: 'vibrant' },
+  { name: 'Neon Orange', hex: '#FF5F1F', category: 'vibrant' },
+  { name: 'Electric Blue', hex: '#00D4FF', category: 'vibrant' },
+  
+  // Classic Colors
+  { name: 'Glossy White', hex: '#FFFFFF', category: 'classic' },
+  { name: 'Jet Black', hex: '#0A0A0A', category: 'classic' },
+  { name: 'Deep Red', hex: '#8B0000', category: 'classic' },
+  { name: 'Royal Blue', hex: '#1E3A8A', category: 'classic' }
+];
