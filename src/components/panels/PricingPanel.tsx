@@ -8,9 +8,10 @@ interface PricingPanelProps {
   colors: BikeColors;
   selectedParts: string[];
   onTogglePart: (partId: string) => void;
+  onOpenCheckout: () => void;
 }
 
-export function PricingPanel({ colors, selectedParts, onTogglePart }: PricingPanelProps) {
+export function PricingPanel({ colors, selectedParts, onTogglePart, onOpenCheckout }: PricingPanelProps) {
   const [showPricing, setShowPricing] = useState(true);
 
   const selectedPartObjects = MOTORCYCLE_PARTS_CATALOG.filter(p => 
@@ -199,8 +200,11 @@ export function PricingPanel({ colors, selectedParts, onTogglePart }: PricingPan
                   ₱{totalPrice.toLocaleString()}
                 </span>
               </div>
-              <button className="w-full py-3 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold transition-all text-white shadow-lg">
-                🛒 Request Quote
+              <button 
+                onClick={onOpenCheckout}
+                className="w-full py-3 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold transition-all text-white shadow-lg"
+              >
+                🛒 Checkout & Buy
               </button>
               <p className="text-xs text-center text-gray-400 mt-2">
                 Free consultation • Install by certified mechanics
