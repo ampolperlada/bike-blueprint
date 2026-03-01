@@ -7,15 +7,17 @@ import { Scene3DViewer } from '@/components/3d/Scene3DViewer';
 import { PartSelector } from '@/components/customizer/PartSelector';
 import { ColorPicker } from '@/components/customizer/ColorPicker';
 import { PricingPanel } from '@/components/panels/PricingPanel';
+import { ShoppingCart } from '@/components/panels/ShoppingCart';
 import { useColorState } from '@/hooks/useColorState';
 import { useBuildManager } from '@/hooks/useBuildManager';
 import { PRESET_COLORS } from '@/lib/constants/colors';
-import { MOTORCYCLE_PART_TYPES } from '@/lib/constants/parts';
+import { MOTORCYCLE_PARTS_CATALOG, MOTORCYCLE_PART_TYPES } from '@/lib/constants/parts';
 import { DEFAULT_COLORS } from '@/types/bike';
 
 export default function MotoPHCustomizer() {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);
+  const [showCheckout, setShowCheckout] = useState(false);
 
   // Color management
   const {
@@ -78,6 +80,25 @@ export default function MotoPHCustomizer() {
     );
   };
 
+  const handleOpenCheckout = () => {
+    if (selectedPartsForPurchase.length === 0) {
+      alert('⚠️ Please select at least one part to customize!');
+      return;
+    }
+    setShowCheckout(true);
+  };
+
+  const handleCheckout = (shopId?: string) => {
+    console.log('Checkout completed for shop:', shopId);
+    setShowCheckout(false);
+  };
+
+  const selectedPartObjects = MOTORCYCLE_PARTS_CATALOG.filter(p =>
+    selectedPartsForPurchase.includes(p.id)
+  );
+
+  const totalPrice = selectedPartObjects.reduce((sum, part) => sum + part.price, 0);
+
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -132,9 +153,21 @@ export default function MotoPHCustomizer() {
             colors={colors}
             selectedParts={selectedPartsForPurchase}
             onTogglePart={handleTogglePart}
+            onOpenCheckout={handleOpenCheckout}
           />
         </div>
       </div>
+
+      {/* Shopping Cart Modal */}
+      {showCheckout && (
+        <ShoppingCart
+          selectedParts={selectedPartObjects}
+          totalPrice={totalPrice}
+          buildName={buildName}
+          onClose={() => setShowCheckout(false)}
+          onCheckout={handleCheckout}
+        />
+      )}
     </div>
   );
 }
