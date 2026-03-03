@@ -54,19 +54,16 @@ export function ShoppingCart({
 
   const handleWhatsAppCheckout = () => {
     const shop = PARTNER_SHOPS.find(s => s.id === selectedShop);
-    if (!shop) return;
-
     const message = `Hi! I want to customize my NMAX:\n\nBuild Name: ${buildName}\n\nParts:\n${selectedParts.map(p => `- ${p.name} (${p.brand}): ₱${p.price.toLocaleString()}`).join('\n')}\n\nTotal: ₱${totalPrice.toLocaleString()}\n\nFrom: MotoPH Studio`;
     
     const encodedMessage = encodeURIComponent(message);
-    const phone = shop.phone.replace(/\+/g, '');
+    const phone = shop?.phone.replace(/\+/g, '');
     window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
   };
 
   const handleMessengerCheckout = () => {
     const shop = PARTNER_SHOPS.find(s => s.id === selectedShop);
-    if (!shop) return;
-    window.open(`https://m.me/${shop.messenger}`, '_blank');
+    window.open(`https://m.me/${shop?.messenger}`, '_blank');
   };
 
   return (
@@ -105,6 +102,7 @@ export function ShoppingCart({
                   <p className="font-bold text-orange-400">₱{part.price.toLocaleString()}</p>
                 </div>
                 
+                {/* Performance */}
                 {(part.performance.acceleration !== 0 || 
                   part.performance.handling !== 0 || 
                   part.performance.weight !== 0) && (
@@ -125,6 +123,7 @@ export function ShoppingCart({
               </div>
             ))}
 
+            {/* Total */}
             <div className="bg-gradient-to-r from-orange-600 to-red-600 rounded-lg p-4">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-lg">TOTAL BUILD COST</span>
