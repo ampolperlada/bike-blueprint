@@ -89,7 +89,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/3d-moto-sys.git
+git clone https://github.com/ampolperlada/bike-blueprint
 cd 3d-moto-sys
 
 # Install dependencies
