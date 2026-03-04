@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ShoppingCart, MapPin, MessageCircle } from 'lucide-react';
+import { X, ShoppingCart as ShoppingCartIcon, MapPin, MessageCircle } from 'lucide-react';
 import { Part } from '@/types/parts';
 
 interface ShoppingCartProps {
@@ -72,7 +72,7 @@ export function ShoppingCart({
         {/* Header */}
         <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <ShoppingCart className="w-6 h-6 text-orange-500" />
+            <ShoppingCartIcon className="w-6 h-6 text-orange-500" />
             <h2 className="text-2xl font-bold">Your Build</h2>
           </div>
           <button
