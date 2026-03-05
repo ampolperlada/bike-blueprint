@@ -1,17 +1,18 @@
-# 🚀 MotoPH CI/CD + Docker Setup Guide
+# MotoPH CI/CD + Docker Setup Guide
 
-## 📋 What You're Getting
+## What You're Getting
 
 This setup includes:
-- ✅ **Docker** - Containerized Next.js app
-- ✅ **Docker Compose** - Multi-container orchestration
-- ✅ **GitHub Actions** - Automated CI/CD pipeline
-- ✅ **Security Scanning** - Automated vulnerability checks
-- ✅ **Multi-stage builds** - Optimized production images
+
+- Docker - Containerized Next.js app
+- Docker Compose - Multi-container orchestration
+- GitHub Actions - Automated CI/CD pipeline
+- Security Scanning - Automated vulnerability checks
+- Multi-stage builds - Optimized production images
 
 ---
 
-## 🐳 Docker Setup
+## Docker Setup
 
 ### Local Development with Docker
 
@@ -59,26 +60,28 @@ docker rmi motoph:latest
 
 ---
 
-## 🔧 GitHub Actions CI/CD Setup
+## GitHub Actions CI/CD Setup
 
 ### Step 1: Enable GitHub Actions
 
 1. Go to your GitHub repo
-2. Click **"Actions"** tab
+2. Click the **Actions** tab
 3. Enable workflows
 
 ### Step 2: Add Secrets (for deployment)
 
-Go to **Settings → Secrets and variables → Actions** and add:
+Go to **Settings > Secrets and variables > Actions** and add:
 
-#### For Vercel Deployment:
+#### For Vercel Deployment
+
 ```
 VERCEL_TOKEN=your_vercel_token
 VERCEL_ORG_ID=your_org_id
 VERCEL_PROJECT_ID=your_project_id
 ```
 
-#### For Server Deployment (SSH):
+#### For Server Deployment (SSH)
+
 ```
 SERVER_HOST=your_server_ip
 SERVER_USER=your_username
@@ -98,37 +101,41 @@ git add .
 git commit -m "feat: add CI/CD pipeline with Docker support"
 
 # Add remote
-git remote add origin https://github.com/yourusername/3d-moto-sys.git
+git remote add origin https://github.com/ampolperlada/bike-blueprint
 
 # Push
 git push -u origin main
 ```
 
-### Step 4: Watch the Magic! ✨
+### Step 4: Watch the Pipeline Run
 
 Every push to `main` or `develop` will:
-1. ✅ Run linting & type checks
-2. ✅ Build Docker image
-3. ✅ Run security scans
-4. ✅ Deploy to production (if configured)
+
+1. Run linting and type checks
+2. Build Docker image
+3. Run security scans
+4. Deploy to production (if configured)
 
 ---
 
-## 📦 What Each File Does
+## What Each File Does
 
 ### `Dockerfile`
+
 - Multi-stage build for small image size (~150MB)
 - Production-optimized Next.js build
 - Non-root user for security
 - Health checks included
 
 ### `docker-compose.yml`
+
 - Local development environment
 - Optional Nginx reverse proxy
 - Network configuration
 - Volume mounts for hot reload
 
 ### `.github/workflows/ci-cd.yml`
+
 - Automated testing on every push
 - Docker image building and pushing to GitHub Container Registry
 - Optional deployment to Vercel or your server
@@ -136,9 +143,10 @@ Every push to `main` or `develop` will:
 
 ---
 
-## 🚀 Deployment Options
+## Deployment Options
 
 ### Option 1: Vercel (Easiest)
+
 ```bash
 npm install -g vercel
 vercel login
@@ -146,12 +154,13 @@ vercel --prod
 ```
 
 ### Option 2: Docker on Your Server
+
 ```bash
 # SSH into server
 ssh user@your-server.com
 
 # Clone repo
-git clone https://github.com/yourusername/3d-moto-sys.git
+git clone https://github.com/ampolperlada/bike-blueprint
 cd 3d-moto-sys
 
 # Build and run
@@ -159,6 +168,7 @@ docker-compose up -d
 ```
 
 ### Option 3: GitHub Container Registry + Your Server
+
 ```bash
 # On your server
 docker login ghcr.io -u yourusername
@@ -172,35 +182,37 @@ docker run -d -p 3000:3000 ghcr.io/yourusername/3d-moto-sys:latest
 
 ---
 
-## 🔐 Security Best Practices
+## Security Best Practices
 
 1. **Never commit secrets** - Use environment variables
 2. **Use `.env.local`** for local development
 3. **Enable Dependabot** - Auto security updates
-4. **Review security scan results** - Check Actions tab
+4. **Review security scan results** - Check the Actions tab
 
 ---
 
-## 📊 Monitoring & Health Checks
+## Monitoring and Health Checks
 
 ### Health Check Endpoint
+
 Create `src/app/api/health/route.ts`:
 
 ```typescript
 export async function GET() {
-  return Response.json({ 
+  return Response.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version 
+    version: process.env.npm_package_version
   });
 }
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Docker build fails
+
 ```bash
 # Clear cache
 docker builder prune -a
@@ -210,11 +222,13 @@ docker build --no-cache -t motoph:latest .
 ```
 
 ### CI/CD fails
-- Check **Actions** tab for error logs
+
+- Check the **Actions** tab for error logs
 - Verify secrets are set correctly
 - Check `package.json` scripts exist
 
 ### Port already in use
+
 ```bash
 # Find process using port 3000
 lsof -i :3000
@@ -225,7 +239,7 @@ kill -9 <PID>
 
 ---
 
-## 📚 Learning Resources
+## Learning Resources
 
 - **Docker:** https://docs.docker.com/get-started/
 - **GitHub Actions:** https://docs.github.com/en/actions
@@ -233,13 +247,13 @@ kill -9 <PID>
 
 ---
 
-## 🎯 Production Checklist
+## Production Checklist
 
 Before deploying to production:
 
 - [ ] Update `next.config.ts` with `output: 'standalone'`
 - [ ] Set environment variables
-- [ ] Configure domain & SSL
+- [ ] Configure domain and SSL
 - [ ] Set up monitoring (optional)
 - [ ] Enable CDN (optional)
 - [ ] Test Docker build locally
@@ -248,23 +262,21 @@ Before deploying to production:
 
 ---
 
-## 📝 Next Steps
+## Next Steps
 
-1. **Copy all DevOps files to your project root**
-2. **Update `next.config.ts`** (use the docker version)
-3. **Test Docker build locally**
-4. **Push to GitHub**
-5. **Watch CI/CD pipeline run**
-6. **Deploy!** 🚀
+1. Copy all DevOps files to your project root
+2. Update `next.config.ts` (use the Docker version)
+3. Test Docker build locally
+4. Push to GitHub
+5. Watch CI/CD pipeline run
+6. Deploy
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
-- Use `docker-compose` for local dev (hot reload works!)
+- Use `docker-compose` for local dev (hot reload works)
 - GitHub Actions are free for public repos
-- Vercel has generous free tier
+- Vercel has a generous free tier
 - Monitor your Docker image size
 - Use multi-stage builds to keep images small
-
-Ready to deploy! 🎉

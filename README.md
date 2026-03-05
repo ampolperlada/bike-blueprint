@@ -1,4 +1,4 @@
-# 🏍️ MotoPH Professional Studio
+# MotoPH Professional Studio
 
 > **3D Motorcycle Customization Platform** - Real-time color customization and e-commerce for Philippine motorcycle enthusiasts
 
@@ -9,40 +9,38 @@
 
 <div align="center">
   <img src="screenshots/hero.png" alt="MotoPH Studio Screenshot" width="800px" />
-  
-  [🎮 Live Demo](https://motoph.vercel.app) • [📖 Documentation](#features) • [🤝 Contributing](#contributing)
 </div>
 
 ---
 
-## ✨ Features
+## Features
 
-### 🎨 Real-Time 3D Customization
+### Real-Time 3D Customization
 - **Interactive 3D Model** - Fully rotatable NMAX 155 motorcycle
 - **Color Picker** - 22+ authentic motorcycle colors (Yamaha Blue, Honda Red, etc.)
 - **Live Preview** - See changes instantly in professional studio lighting
 - **Part Selection** - Customize body, wheels, seat, mirrors, frame independently
 
-### 🛒 E-Commerce Ready
+### E-Commerce Ready
 - **Shopping Cart** - Add customized parts to cart
 - **Real Parts Catalog** - Authentic brands (RCB Racing, Rizoma, Akrapovic)
 - **Price Ranges** - ₱800 - ₱12,500 per part
 - **Direct Checkout** - WhatsApp & Messenger integration with shops
 - **Shop Locator** - Find certified installers near you
 
-### ⚡ Performance Indicators
+### Performance Indicators
 - **Acceleration Impact** - See how parts affect speed (+1, +2, etc.)
 - **Handling Metrics** - Track handling improvements
 - **Weight Changes** - Monitor weight reduction (-1.5kg, -2.1kg)
 - **Sound Levels** - Know what to expect (Quiet → Very Loud)
 
-### 💾 Save & Share
+### Save & Share
 - **Build Manager** - Save up to 10 custom builds locally
 - **Share Links** - Share your design via URL
 - **Export HD** - Download high-quality PNG screenshots
 - **Before/After** - Compare stock vs custom instantly
 
-### 🔧 Professional Features
+### Professional Features
 - **Compatibility Badges** - See which models parts fit
 - **Installation Time** - Know how long each upgrade takes
 - **Maintenance Tips** - Care instructions per part
@@ -50,7 +48,7 @@
 
 ---
 
-## 🚀 Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
@@ -78,10 +76,10 @@
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
-- Node.js 20+ 
+- Node.js 20+
 - npm or yarn
 - Git
 
@@ -117,7 +115,7 @@ docker-compose up
 
 ---
 
-## 🎯 Usage Examples
+## Usage Examples
 
 ### Basic Customization
 ```typescript
@@ -148,7 +146,7 @@ selectedParts: ['body', 'wheels', 'exhaust']
 
 ---
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 src/
@@ -191,7 +189,7 @@ src/
 
 ---
 
-## 🎨 Color System
+## Color System
 
 ### Brand Colors
 - **Yamaha:** `#0062A5`, `#003087`, `#D31245`
@@ -205,7 +203,7 @@ src/
 
 ---
 
-## 🛠️ Development
+## Development
 
 ### Run Tests
 ```bash
@@ -230,7 +228,7 @@ npm run start
 
 ---
 
-## 🌐 Deployment
+## Deployment
 
 ### Deploy to Vercel (Recommended)
 ```bash
@@ -256,17 +254,17 @@ NEXT_PUBLIC_ANALYTICS_ID=your_analytics_id
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Ways to Contribute
-- 🐛 Report bugs
-- 💡 Suggest features
-- 📝 Improve documentation
-- 🎨 Add new color presets
-- 🏍️ Add new bike models
-- 🌍 Translate to other languages
+- Report bugs
+- Suggest features
+- Improve documentation
+- Add new color presets
+- Add new bike models
+- Translate to other languages
 
 ### Development Process
 1. Fork the repository
@@ -277,13 +275,13 @@ We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for deta
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **3D Model:** NMAX 155 from [Sketchfab](https://sketchfab.com/)
 - **Inspiration:** Philippine motorcycle community
@@ -292,15 +290,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📞 Contact & Support
+## Contact & Support
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/3d-moto-sys/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/3d-moto-sys/discussions)
-- **Email:** your.email@example.com
+- **Issues:** [GitHub Issues](https://github.com/ampolperlada/3d-moto-sys/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/ampolperlada/3d-moto-sys/discussions)
+- **Email:** christianp.perlada@gmail.com
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### Version 1.1 (Q2 2025)
 - [ ] Add more bike models (Honda Click, Yamaha Mio)
@@ -322,16 +320,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📊 Stats
+## Stats
 
-![GitHub stars](https://img.shields.io/github/stars/yourusername/3d-moto-sys?style=social)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/3d-moto-sys?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/yourusername/3d-moto-sys?style=social)
+![GitHub stars](https://img.shields.io/github/stars/ampolperlada/3d-moto-sys?style=social)
+![GitHub forks](https://img.shields.io/github/forks/ampolperlada/3d-moto-sys?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/ampolperlada/3d-moto-sys?style=social)
 
 ---
 
 <div align="center">
   <strong>built for filipino riders</strong>
   <br />
-  <sub>Made by <a href="https://github.com/yourusername">Your Name</a></sub>
+  <sub>Made by <a href="https://github.com/ampolperlada">ampolperlada</a></sub>
 </div>

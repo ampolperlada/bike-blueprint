@@ -1,158 +1,274 @@
-# Contributing to MotoPH
+# MotoPH CI/CD + Docker Setup Guide
 
-First off, thank you for considering contributing to MotoPH! 🎉
+This setup includes everything you need to containerize and automate deployments for MotoPH.
 
-## How Can I Contribute?
+## What You're Getting
 
-### 🐛 Reporting Bugs
-
-**Before creating a bug report:**
-- Check if the bug has already been reported in [Issues](https://github.com/yourusername/3d-moto-sys/issues)
-- Try the latest version to see if the bug still exists
-
-**When creating a bug report, include:**
-- Clear and descriptive title
-- Steps to reproduce the issue
-- Expected vs actual behavior
-- Screenshots if applicable
-- Your environment (OS, browser, Node version)
-
-### 💡 Suggesting Features
-
-**Before suggesting a feature:**
-- Check if it's already been suggested
-- Make sure it aligns with the project goals
-
-**When suggesting a feature, include:**
-- Clear description of the feature
-- Why it would be useful
-- Possible implementation approach
-- Mockups/screenshots if applicable
-
-### 🔨 Pull Requests
-
-1. **Fork the repo** and create your branch from `main`
-2. **Follow the coding style** of the project
-3. **Write clear commit messages** using conventional commits:
-   - `feat: add new color preset`
-   - `fix: resolve checkout button bug`
-   - `docs: update installation guide`
-   - `style: format code with prettier`
-   - `refactor: improve performance calculation`
-   - `test: add unit tests for color picker`
-4. **Test your changes** - make sure everything works
-5. **Update documentation** if needed
-6. **Submit the PR** with a clear description
-
-### 💻 Development Setup
-
-```bash
-# Fork and clone
-git clone https://github.com/YOUR_USERNAME/3d-moto-sys.git
-cd 3d-moto-sys
-
-# Add upstream remote
-git remote add upstream https://github.com/ORIGINAL_OWNER/3d-moto-sys.git
-
-# Install dependencies
-npm install
-
-# Create feature branch
-git checkout -b feature/my-amazing-feature
-
-# Make changes and commit
-git add .
-git commit -m "feat: add my amazing feature"
-
-# Push to your fork
-git push origin feature/my-amazing-feature
-
-# Open PR on GitHub
-```
-
-### 📝 Commit Message Guidelines
-
-We use [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>(<scope>): <subject>
-
-Types:
-- feat: New feature
-- fix: Bug fix
-- docs: Documentation only
-- style: Code style (formatting, semicolons, etc)
-- refactor: Code change that neither fixes a bug nor adds a feature
-- perf: Performance improvement
-- test: Adding tests
-- chore: Build process or auxiliary tools
-
-Examples:
-feat(customizer): add custom decal support
-fix(checkout): resolve WhatsApp link encoding issue
-docs(readme): add deployment instructions
-```
-
-### 🎨 Code Style
-
-- Use TypeScript for all new files
-- Follow existing code structure
-- Use functional components with hooks
-- Use Tailwind CSS for styling
-- Keep components small and focused
-- Add JSDoc comments for complex functions
-
-### 🧪 Testing
-
-```bash
-# Run tests
-npm test
-
-# Run linter
-npm run lint
-
-# Type check
-npx tsc --noEmit
-```
-
-### 📋 Areas to Contribute
-
-**Easy (Good First Issues):**
-- Add new color presets
-- Fix typos in documentation
-- Improve error messages
-- Add more part descriptions
-
-**Medium:**
-- Add new motorcycle models
-- Improve mobile responsiveness
-- Add keyboard shortcuts
-- Performance optimizations
-
-**Advanced:**
-- AR preview implementation
-- User authentication system
-- Payment integration
-- Backend API
-
-### 🌍 Internationalization
-
-We're looking to add support for more languages:
-- Tagalog/Filipino
-- Spanish
-- Japanese
-- More!
-
-### 📞 Questions?
-
-- Open a [Discussion](https://github.com/yourusername/3d-moto-sys/discussions)
-- Join our community chat
-- Email: your.email@example.com
-
-### 🙏 Recognition
-
-Contributors will be added to our [Contributors](#contributors) section!
+- **Docker** - Containerized Next.js app
+- **Docker Compose** - Multi-container orchestration
+- **GitHub Actions** - Automated CI/CD pipeline
+- **Security Scanning** - Automated vulnerability checks
+- **Multi-stage builds** - Optimized production images
 
 ---
 
-Thank you for helping make MotoPH better! 🏍️✨
+## 🐳 Docker Setup
+
+### Local Development with Docker
+
+```bash
+# Build the image
+docker build -t motoph-app .
+
+# Run the container
+docker run -p 3000:3000 motoph-app
+
+# Or use Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f app
+
+# Stop
+docker-compose down
+```
+
+### Docker Commands Cheat Sheet
+
+```bash
+# Build image
+docker build -t motoph:latest .
+
+# Run container
+docker run -d -p 3000:3000 --name motoph motoph:latest
+
+# View logs
+docker logs -f motoph
+
+# Shell into container
+docker exec -it motoph sh
+
+# Stop container
+docker stop motoph
+
+# Remove container
+docker rm motoph
+
+# Remove image
+docker rmi motoph:latest
+```
+
+---
+
+## 🔧 GitHub Actions CI/CD Setup
+
+### Step 1: Enable GitHub Actions
+
+1. Go to your GitHub repo
+2. Click **"Actions"** tab
+3. Enable workflows
+
+### Step 2: Add Secrets (for deployment)
+
+Go to **Settings → Secrets and variables → Actions** and add:
+
+**For Vercel Deployment:**
+```
+VERCEL_TOKEN=your_vercel_token
+VERCEL_ORG_ID=your_org_id
+VERCEL_PROJECT_ID=your_project_id
+```
+
+**For Server Deployment (SSH):**
+```
+SERVER_HOST=your_server_ip
+SERVER_USER=your_username
+SERVER_SSH_KEY=your_private_key
+```
+
+### Step 3: Push to GitHub
+
+```bash
+# Initialize git (if not already)
+git init
+
+# Add files
+git add .
+
+# Commit
+git commit -m "feat: add CI/CD pipeline with Docker support"
+
+# Add remote
+git remote add origin https://github.com/ampolperlada/bike-blueprint
+
+# Push
+git push -u origin main
+```
+
+### Step 4: Watch the Magic! ✨
+
+Every push to `main` or `develop` will:
+1. Run linting & type checks
+2. Build Docker image
+3. Run security scans
+4. Deploy to production (if configured)
+
+---
+
+## 📦 What Each File Does
+
+### `Dockerfile`
+- Multi-stage build for small image size (~150MB)
+- Production-optimized Next.js build
+- Non-root user for security
+- Health checks included
+
+### `docker-compose.yml`
+- Local development environment
+- Optional Nginx reverse proxy
+- Network configuration
+- Volume mounts for hot reload
+
+### `.github/workflows/ci-cd.yml`
+- Automated testing on every push
+- Docker image building and pushing to GitHub Container Registry
+- Optional deployment to Vercel or your server
+- Security vulnerability scanning
+
+---
+
+## 🚀 Deployment Options
+
+### Option 1: Vercel (Easiest)
+```bash
+npm install -g vercel
+vercel login
+vercel --prod
+```
+
+### Option 2: Docker on Your Server
+```bash
+# SSH into server
+ssh user@your-server.com
+
+# Clone repo
+git clone https://github.com/ampolperlada/bike-blueprint
+cd 3d-moto-sys
+
+# Build and run
+docker-compose up -d
+```
+
+### Option 3: GitHub Container Registry + Your Server
+```bash
+# On your server
+docker login ghcr.io -u yourusername
+
+# Pull image
+docker pull ghcr.io/yourusername/3d-moto-sys:latest
+
+# Run
+docker run -d -p 3000:3000 ghcr.io/yourusername/3d-moto-sys:latest
+```
+
+---
+
+## 🔐 Security Best Practices
+
+1. **Never commit secrets** - Use environment variables
+2. **Use `.env.local`** for local development
+3. **Enable Dependabot** - Auto security updates
+4. **Review security scan results** - Check Actions tab
+
+---
+
+## 📊 Monitoring & Health Checks
+
+### Health Check Endpoint
+
+Create `src/app/api/health/route.ts`:
+
+```typescript
+export async function GET() {
+  return Response.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    version: process.env.npm_package_version
+  });
+}
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Docker build fails
+```bash
+# Clear cache
+docker builder prune -a
+
+# Build without cache
+docker build --no-cache -t motoph:latest .
+```
+
+### CI/CD fails
+- Check **Actions** tab for error logs
+- Verify secrets are set correctly
+- Check `package.json` scripts exist
+
+### Port already in use
+```bash
+# Find process using port 3000
+lsof -i :3000
+
+# Kill it
+kill -9 <PID>
+```
+
+---
+
+## 📚 Learning Resources
+
+- **Docker:** https://docs.docker.com/get-started/
+- **GitHub Actions:** https://docs.github.com/en/actions
+- **Next.js Deployment:** https://nextjs.org/docs/deployment
+
+---
+
+## 🎯 Production Checklist
+
+Before deploying to production:
+
+- [ ] Update `next.config.ts` with `output: 'standalone'`
+- [ ] Set environment variables
+- [ ] Configure domain & SSL
+- [ ] Set up monitoring (optional)
+- [ ] Enable CDN (optional)
+- [ ] Test Docker build locally
+- [ ] Run security scan
+- [ ] Set up backup strategy
+
+---
+
+## 📝 Next Steps
+
+1. **Copy all DevOps files** to your project root
+2. **Update `next.config.ts`** (use the Docker version)
+3. **Test Docker build** locally
+4. **Push to GitHub**
+5. **Watch CI/CD pipeline** run
+6. **Deploy!** 🚀
+
+---
+
+## 💡 Pro Tips
+
+- Use `docker-compose` for local dev (hot reload works!)
+- GitHub Actions are free for public repos
+- Vercel has a generous free tier
+- Monitor your Docker image size
+- Use multi-stage builds to keep images small
+
+---
+
+Ready to deploy! 🎉
