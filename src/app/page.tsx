@@ -128,7 +128,9 @@ export default function CADCustomizer() {
               onClick={() => setSelectedPart(part.id)}
             >
               <div className="cad-component-icon">
-                <span style={{ fontSize: '18px' }}>{part.icon}</span>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#007ACC', fontFamily: 'monospace' }}>
+                  {part.icon}
+                </span>
               </div>
               <div className="cad-component-label">
                 <div className="cad-component-name">{part.label}</div>

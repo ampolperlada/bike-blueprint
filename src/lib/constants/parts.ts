@@ -131,10 +131,10 @@ export const MOTORCYCLE_PARTS_CATALOG: Part[] = [
 ];
 
 export const MOTORCYCLE_PART_TYPES = [
-  { id: 'body' as const, label: 'Body Panels', description: 'Main fairings', icon: '🏍️' },
-  { id: 'wheels' as const, label: 'Wheels', description: 'Rims & tires', icon: '⚙️' },
-  { id: 'seat' as const, label: 'Seat', description: 'Saddle cover', icon: '💺' },
-  { id: 'mirrors' as const, label: 'Mirrors', description: 'Side mirrors', icon: '🪞' },
-  { id: 'frame' as const, label: 'Frame', description: 'Chassis', icon: '🔩' },
-  { id: 'exhaust' as const, label: 'Exhaust', description: 'Muffler system', icon: '💨' }
+  { id: 'body' as const, label: 'Body Panels', description: 'Main fairings', icon: 'BP' },
+  { id: 'wheels' as const, label: 'Wheels', description: 'Rims & tires', icon: 'WH' },
+  { id: 'seat' as const, label: 'Seat', description: 'Saddle cover', icon: 'ST' },
+  { id: 'mirrors' as const, label: 'Mirrors', description: 'Side mirrors', icon: 'MR' },
+  { id: 'frame' as const, label: 'Frame', description: 'Chassis', icon: 'FR' },
+  { id: 'exhaust' as const, label: 'Exhaust', description: 'Muffler system', icon: 'EX' }
 ];
