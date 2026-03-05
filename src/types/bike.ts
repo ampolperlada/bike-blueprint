@@ -4,6 +4,7 @@ export interface BikeColors {
   seat: string;
   mirrors: string;
   frame: string;
+  exhaust: string;
 }
 
 export interface BikeDesign {
@@ -25,7 +26,8 @@ export const DEFAULT_COLORS: BikeColors = {
   wheels: '#1a1a1a',
   seat: '#2a2a2a',
   mirrors: '#C0C0C0',
-  frame: '#3a3a3a'
+  frame: '#3a3a3a',
+  exhaust: '#4a4a4a'
 };
 
 export const STOCK_COLORS: BikeColors = {
@@ -33,5 +35,6 @@ export const STOCK_COLORS: BikeColors = {
   wheels: '#1a1a1a',
   seat: '#2a2a2a',
   mirrors: '#C0C0C0',
-  frame: '#3a3a3a'
+  frame: '#3a3a3a',
+  exhaust: '#4a4a4a'
 };
