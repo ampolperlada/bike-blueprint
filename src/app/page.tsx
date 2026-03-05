@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Header } from '@/components/ui/Header';
+import { BlueprintHeader } from '@/components/ui/BlueprintHeader';
 import { ActionBar } from '@/components/ui/ActionBar';
 import { Scene3DViewer } from '@/components/3d/Scene3DViewer';
 import { PartSelector } from '@/components/customizer/PartSelector';
@@ -112,8 +112,12 @@ export default function MotoPHCustomizer() {
   )?.label || 'Part';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
-      <Header onSettingsClick={() => setShowSettings(!showSettings)} />
+    <div className="min-h-screen blueprint-bg text-bp-text-primary">
+      <BlueprintHeader 
+        onSettingsClick={() => setShowSettings(!showSettings)}
+        projectName="NMAX 155"
+        revision="REV 1.0"
+      />
 
       <div className="container mx-auto p-4 h-[calc(100vh-88px)] flex gap-4">
         {/* 3D Viewer */}
