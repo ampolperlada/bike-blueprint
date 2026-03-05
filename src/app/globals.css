@@ -1,26 +1,317 @@
-@import "tailwindcss";
+/* Blueprint Theme - Technical Drawing Aesthetic */
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Blueprint Colors */
+    --bp-bg-primary: #0A1929;
+    --bp-bg-secondary: #0D2136;
+    --bp-bg-tertiary: #132F4C;
+    
+    --bp-line-primary: #00B8D9;
+    --bp-line-secondary: #0097B2;
+    --bp-line-accent: #00E5FF;
+    
+    --bp-text-primary: #B2D4FF;
+    --bp-text-secondary: #80B3FF;
+    --bp-text-bright: #FFFFFF;
+    
+    --bp-accent-orange: #FF9100;
+    --bp-accent-green: #00E676;
+    --bp-accent-red: #FF3D00;
+  }
+  
+  body {
+    @apply bg-[#0A1929] text-[#B2D4FF];
+    font-family: 'Share Tech Mono', monospace;
+    overflow-x: hidden;
+  }
+  
+  /* Blueprint Grid Background */
+  .blueprint-bg {
+    background-color: #0A1929;
+    background-image: 
+      /* Fine grid */
+      linear-gradient(rgba(0, 184, 217, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 184, 217, 0.08) 1px, transparent 1px),
+      /* Thick grid every 100px */
+      linear-gradient(rgba(0, 184, 217, 0.15) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(0, 184, 217, 0.15) 2px, transparent 2px);
+    background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+    background-position: -1px -1px, -1px -1px, -2px -2px, -2px -2px;
+  }
+  
+  /* Scanline Effect (subtle) */
+  .blueprint-bg::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 184, 217, 0.03) 0px,
+      transparent 1px,
+      transparent 2px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  /* Corner Markers (like blueprints have) */
+  .blueprint-corners::before,
+  .blueprint-corners::after {
+    content: '';
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--bp-line-primary);
+  }
+  
+  .blueprint-corners::before {
+    top: 10px;
+    left: 10px;
+    border-right: none;
+    border-bottom: none;
+  }
+  
+  .blueprint-corners::after {
+    bottom: 10px;
+    right: 10px;
+    border-left: none;
+    border-top: none;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Technical Panel */
+  .bp-panel {
+    @apply bg-gradient-to-br from-[#0D2136] to-[#0A1929];
+    @apply border border-[#00B8D9] rounded-none;
+    @apply shadow-[0_0_20px_rgba(0,184,217,0.1),inset_0_0_60px_rgba(0,184,217,0.05)];
+    position: relative;
+  }
+  
+  /* Technical label (like blueprint annotations) */
+  .bp-label {
+    @apply text-[#00E5FF] font-mono text-xs uppercase tracking-wider;
+    @apply relative pl-6;
+  }
+  
+  .bp-label::before {
+    content: '▶';
+    @apply absolute left-0 text-[#00B8D9];
+  }
+  
+  /* Technical Button */
+  .bp-button {
+    @apply bg-transparent border-2 border-[#00B8D9];
+    @apply text-[#B2D4FF] font-mono uppercase tracking-wider;
+    @apply px-6 py-3 relative overflow-hidden;
+    @apply transition-all duration-300;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  
+  .bp-button::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-[#00B8D9]/30 to-transparent;
+    @apply -translate-x-full;
+    @apply transition-transform duration-500;
+  }
+  
+  .bp-button:hover {
+    @apply border-[#00E5FF] text-[#00E5FF];
+    @apply shadow-[0_0_20px_rgba(0,229,255,0.4)];
+  }
+  
+  .bp-button:hover::before {
+    @apply translate-x-full;
+  }
+  
+  .bp-button:active {
+    @apply scale-95;
+  }
+  
+  /* Technical Input */
+  .bp-input {
+    @apply bg-[#0D2136]/50 border border-[#00B8D9];
+    @apply text-[#B2D4FF] font-mono px-4 py-2;
+    @apply focus:border-[#00E5FF] focus:outline-none;
+    @apply transition-all duration-300;
+  }
+  
+  .bp-input:focus {
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+  }
+  
+  /* Measurement Line (like technical drawings) */
+  .bp-measurement {
+    @apply relative;
+  }
+  
+  .bp-measurement::before,
+  .bp-measurement::after {
+    content: '';
+    @apply absolute h-px bg-[#00E5FF];
+  }
+  
+  /* Technical Heading */
+  .bp-heading {
+    font-family: 'Orbitron', monospace;
+    @apply text-[#00E5FF] uppercase tracking-wider;
+    @apply relative inline-block;
+  }
+  
+  .bp-heading::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-px;
+    @apply bg-gradient-to-r from-[#00E5FF] to-transparent;
+  }
+  
+  /* Glowing Effect */
+  .bp-glow {
+    box-shadow: 
+      0 0 10px rgba(0, 184, 217, 0.5),
+      0 0 20px rgba(0, 184, 217, 0.3),
+      0 0 30px rgba(0, 184, 217, 0.1);
+  }
+  
+  /* Technical Card */
+  .bp-card {
+    @apply bp-panel p-6;
+    @apply blueprint-corners;
+  }
+  
+  /* Dimension Text (like measurements on blueprints) */
+  .bp-dimension {
+    @apply font-mono text-[10px] text-[#00E5FF];
+    @apply px-2 py-1 bg-[#0A1929] border border-[#00B8D9];
+  }
+  
+  /* Status Indicators */
+  .bp-status-active {
+    @apply text-[#00E676] bp-glow;
+  }
+  
+  .bp-status-warning {
+    @apply text-[#FF9100];
+    text-shadow: 0 0 10px rgba(255, 145, 0, 0.5);
+  }
+  
+  .bp-status-error {
+    @apply text-[#FF3D00];
+    text-shadow: 0 0 10px rgba(255, 61, 0, 0.5);
+  }
+  
+  /* Technical List */
+  .bp-list li {
+    @apply relative pl-6 mb-2;
+  }
+  
+  .bp-list li::before {
+    content: '□';
+    @apply absolute left-0 text-[#00B8D9];
+  }
+  
+  .bp-list li.checked::before {
+    content: '☑';
+    @apply text-[#00E676];
+  }
+  
+  /* Code/Spec Display */
+  .bp-code {
+    @apply bg-[#0D2136] border-l-4 border-[#00B8D9];
+    @apply p-4 font-mono text-sm text-[#80B3FF];
+  }
+  
+  /* Animated Border */
+  @keyframes border-flow {
+    0% { background-position: 0 0; }
+    100% { background-position: 100px 100px; }
+  }
+  
+  .bp-animated-border {
+    @apply relative;
+  }
+  
+  .bp-animated-border::before {
+    content: '';
+    @apply absolute inset-0 rounded-none;
+    background: 
+      linear-gradient(90deg, #00B8D9 50%, transparent 50%),
+      linear-gradient(90deg, #00B8D9 50%, transparent 50%),
+      linear-gradient(0deg, #00B8D9 50%, transparent 50%),
+      linear-gradient(0deg, #00B8D9 50%, transparent 50%);
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+    background-size: 16px 2px, 16px 2px, 2px 16px, 2px 16px;
+    background-position: 0 0, 100% 100%, 0 100%, 100% 0;
+    animation: border-flow 1s linear infinite;
+  }
+  
+  /* Loading Animation */
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+  
+  .bp-loading {
+    @apply relative overflow-hidden;
+  }
+  
+  .bp-loading::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-b;
+    @apply from-transparent via-[#00E5FF]/20 to-transparent;
+    animation: scan 2s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  .text-blueprint {
+    color: var(--bp-text-primary);
+  }
+  
+  .text-blueprint-bright {
+    color: var(--bp-text-bright);
+  }
+  
+  .border-blueprint {
+    border-color: var(--bp-line-primary);
+  }
+  
+  .bg-blueprint {
+    background-color: var(--bp-bg-primary);
+  }
+}
+
+/* Custom Scrollbar - Blueprint Style */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A1929;
+  border-left: 1px solid #00B8D9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00B8D9 0%, #0097B2 100%);
+  border: 2px solid #0A1929;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00E5FF 0%, #00B8D9 100%);
+}
+
+/* Selection */
+::selection {
+  background: rgba(0, 184, 217, 0.3);
+  color: #00E5FF;
 }
