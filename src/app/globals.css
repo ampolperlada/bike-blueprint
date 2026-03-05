@@ -1,262 +1,411 @@
-/* Blueprint Theme - Compatible with Tailwind CSS v4 */
+/* Professional CAD/Engineering Software Theme */
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
 
 @import "tailwindcss";
 
 @layer base {
   :root {
-    /* Blueprint Colors */
-    --bp-bg-primary: #0A1929;
-    --bp-bg-secondary: #0D2136;
-    --bp-bg-tertiary: #132F4C;
+    /* Professional CAD Colors - Neutral & Clean */
+    --cad-bg-primary: #1E1E1E;      /* Dark gray background */
+    --cad-bg-secondary: #252526;     /* Slightly lighter panels */
+    --cad-bg-tertiary: #2D2D30;      /* Hover states */
     
-    --bp-line-primary: #00B8D9;
-    --bp-line-secondary: #0097B2;
-    --bp-line-accent: #00E5FF;
+    --cad-border: #3E3E42;           /* Subtle borders */
+    --cad-text-primary: #CCCCCC;     /* Main text */
+    --cad-text-secondary: #808080;   /* Dimmed text */
+    --cad-text-bright: #FFFFFF;      /* Headers */
     
-    --bp-text-primary: #B2D4FF;
-    --bp-text-secondary: #80B3FF;
-    --bp-text-bright: #FFFFFF;
-    
-    --bp-accent-orange: #FF9100;
-    --bp-accent-green: #00E676;
-    --bp-accent-red: #FF3D00;
+    --cad-accent: #007ACC;           /* Blue accent (like VS Code) */
+    --cad-accent-hover: #0098FF;     /* Lighter blue on hover */
+  }
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
   }
   
   body {
-    background-color: #0A1929;
-    color: #B2D4FF;
-    font-family: 'Share Tech Mono', monospace;
-    overflow-x: hidden;
+    background-color: #1E1E1E;
+    color: #CCCCCC;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow: hidden;
   }
 }
 
-/* Blueprint Grid Background */
-.blueprint-bg {
-  background-color: #0A1929;
-  background-image: 
-    /* Fine grid */
-    linear-gradient(rgba(0, 184, 217, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 184, 217, 0.08) 1px, transparent 1px),
-    /* Thick grid every 100px */
-    linear-gradient(rgba(0, 184, 217, 0.15) 2px, transparent 2px),
-    linear-gradient(90deg, rgba(0, 184, 217, 0.15) 2px, transparent 2px);
-  background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
-  background-position: -1px -1px, -1px -1px, -2px -2px, -2px -2px;
+/* Main Layout - Full Screen Viewer */
+.cad-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: #1E1E1E;
 }
 
-/* Scanline Effect */
-.blueprint-bg::before {
-  content: '';
+/* Top Toolbar - Minimal */
+.cad-toolbar {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 184, 217, 0.03) 0px,
-    transparent 1px,
-    transparent 2px
-  );
-  pointer-events: none;
-  z-index: 1;
+  right: 0;
+  height: 40px;
+  background: #252526;
+  border-bottom: 1px solid #3E3E42;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 100;
+  justify-content: space-between;
 }
 
-/* Corner Markers */
-.blueprint-corners::before,
-.blueprint-corners::after {
-  content: '';
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  border: 2px solid var(--bp-line-primary);
+.cad-toolbar-left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-.blueprint-corners::before {
-  top: 10px;
-  left: 10px;
-  border-right: none;
-  border-bottom: none;
+.cad-toolbar-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
-.blueprint-corners::after {
-  bottom: 10px;
-  right: 10px;
-  border-left: none;
-  border-top: none;
-}
-
-/* Technical Panel */
-.bp-panel {
-  background: linear-gradient(135deg, #0D2136 0%, #0A1929 100%);
-  border: 1px solid #00B8D9;
-  box-shadow: 
-    0 0 20px rgba(0, 184, 217, 0.1),
-    inset 0 0 60px rgba(0, 184, 217, 0.05);
-  position: relative;
-}
-
-/* Technical Button */
-.bp-button {
+/* Toolbar Buttons - Clean */
+.cad-tool-button {
   background: transparent;
-  border: 2px solid #00B8D9;
-  color: #B2D4FF;
-  font-family: 'Share Tech Mono', monospace;
+  border: none;
+  color: #CCCCCC;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cad-tool-button:hover {
+  background: #2D2D30;
+}
+
+.cad-tool-button:active {
+  background: #3E3E42;
+}
+
+.cad-tool-button.active {
+  background: #007ACC;
+  color: white;
+}
+
+/* Right Sidebar - Properties Panel */
+.cad-sidebar {
+  position: fixed;
+  right: 0;
+  top: 40px;
+  bottom: 0;
+  width: 320px;
+  background: #252526;
+  border-left: 1px solid #3E3E42;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.cad-sidebar-section {
+  border-bottom: 1px solid #3E3E42;
+  padding: 16px;
+}
+
+.cad-section-title {
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.125rem;
-  padding: 0.75rem 1.5rem;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  color: #808080;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
 }
 
-.bp-button::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(0, 184, 217, 0.3), transparent);
-  transform: translateX(-100%);
-  transition: transform 0.5s;
+/* Component List - Clean */
+.cad-component-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #1E1E1E;
+  border: 1px solid #3E3E42;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.bp-button:hover {
-  border-color: #00E5FF;
-  color: #00E5FF;
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+.cad-component-item:hover {
+  background: #2D2D30;
+  border-color: #007ACC;
 }
 
-.bp-button:hover::before {
-  transform: translateX(100%);
+.cad-component-item.selected {
+  background: #264F78;
+  border-color: #007ACC;
 }
 
-.bp-button:active {
-  transform: scale(0.95);
+.cad-component-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2D2D30;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
-/* Technical Input */
-.bp-input {
-  background: rgba(13, 33, 54, 0.5);
-  border: 1px solid #00B8D9;
-  color: #B2D4FF;
-  font-family: 'JetBrains Mono', monospace;
-  padding: 0.5rem 1rem;
-  transition: all 0.3s;
+.cad-component-label {
+  flex: 1;
 }
 
-.bp-input:focus {
-  border-color: #00E5FF;
+.cad-component-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #CCCCCC;
+  margin-bottom: 2px;
+}
+
+.cad-component-desc {
+  font-size: 11px;
+  color: #808080;
+}
+
+.cad-component-checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #3E3E42;
+  border-radius: 3px;
+  background: #1E1E1E;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cad-component-checkbox.checked {
+  background: #007ACC;
+  border-color: #007ACC;
+}
+
+/* Color Swatches - Minimal */
+.cad-color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.cad-color-swatch {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cad-color-swatch:hover {
+  border-color: #808080;
+  transform: scale(1.1);
+}
+
+.cad-color-swatch.selected {
+  border-color: #007ACC;
+  box-shadow: 0 0 0 1px #007ACC;
+}
+
+/* Custom Color Input */
+.cad-color-input {
+  width: 100%;
+  height: 40px;
+  border-radius: 4px;
+  border: 1px solid #3E3E42;
+  background: #1E1E1E;
+  cursor: pointer;
+}
+
+.cad-text-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1E1E1E;
+  border: 1px solid #3E3E42;
+  border-radius: 4px;
+  color: #CCCCCC;
+  font-size: 13px;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.cad-text-input:focus {
   outline: none;
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+  border-color: #007ACC;
+  background: #252526;
 }
 
-/* Technical Heading */
-.bp-heading {
-  font-family: 'Orbitron', monospace;
-  color: #00E5FF;
-  text-transform: uppercase;
-  letter-spacing: 0.125rem;
-  position: relative;
-  display: inline-block;
-}
-
-.bp-heading::after {
-  content: '';
-  position: absolute;
+/* Bottom Action Bar - Clean */
+.cad-action-bar {
+  position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, #00E5FF, transparent);
+  right: 320px; /* Account for sidebar */
+  height: 48px;
+  background: #252526;
+  border-top: 1px solid #3E3E42;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  z-index: 100;
 }
 
-/* Glowing Effect */
-.bp-glow {
-  box-shadow: 
-    0 0 10px rgba(0, 184, 217, 0.5),
-    0 0 20px rgba(0, 184, 217, 0.3),
-    0 0 30px rgba(0, 184, 217, 0.1);
+/* Primary Action Button */
+.cad-button-primary {
+  background: #007ACC;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-/* Technical Card */
-.bp-card {
-  background: linear-gradient(135deg, #0D2136 0%, #0A1929 100%);
-  border: 1px solid #00B8D9;
-  box-shadow: 
-    0 0 20px rgba(0, 184, 217, 0.1),
-    inset 0 0 60px rgba(0, 184, 217, 0.05);
-  padding: 1.5rem;
-  position: relative;
+.cad-button-primary:hover {
+  background: #0098FF;
 }
 
-/* Animated Border */
-@keyframes border-flow {
-  0% { background-position: 0 0; }
-  100% { background-position: 100px 100px; }
+.cad-button-primary:active {
+  background: #005A9E;
 }
 
-.bp-animated-border {
-  position: relative;
+/* Secondary Button */
+.cad-button-secondary {
+  background: transparent;
+  color: #CCCCCC;
+  border: 1px solid #3E3E42;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.bp-animated-border::before {
-  content: '';
+.cad-button-secondary:hover {
+  background: #2D2D30;
+  border-color: #808080;
+}
+
+/* 3D Viewer - Full Screen */
+.cad-viewer {
+  position: fixed;
+  top: 40px;
+  left: 0;
+  right: 320px;
+  bottom: 48px;
+  background: #1E1E1E;
+}
+
+.cad-viewer canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* View Controls (Top Left of Viewer) */
+.cad-view-controls {
   position: absolute;
-  inset: 0;
-  background: 
-    linear-gradient(90deg, #00B8D9 50%, transparent 50%),
-    linear-gradient(90deg, #00B8D9 50%, transparent 50%),
-    linear-gradient(0deg, #00B8D9 50%, transparent 50%),
-    linear-gradient(0deg, #00B8D9 50%, transparent 50%);
-  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
-  background-size: 16px 2px, 16px 2px, 2px 16px, 2px 16px;
-  background-position: 0 0, 100% 100%, 0 100%, 100% 0;
-  animation: border-flow 1s linear infinite;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
 }
 
-/* Loading Animation */
-@keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+.cad-view-button {
+  width: 40px;
+  height: 40px;
+  background: #252526;
+  border: 1px solid #3E3E42;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #CCCCCC;
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.bp-loading {
-  position: relative;
-  overflow: hidden;
+.cad-view-button:hover {
+  background: #2D2D30;
+  border-color: #808080;
 }
 
-.bp-loading::after {
-  content: '';
+.cad-view-button.active {
+  background: #007ACC;
+  border-color: #007ACC;
+  color: white;
+}
+
+/* Info Overlay (Bottom Left) */
+.cad-info-overlay {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent, rgba(0, 229, 255, 0.2), transparent);
-  animation: scan 2s ease-in-out infinite;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(37, 37, 38, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid #3E3E42;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #808080;
+  font-family: 'Roboto Mono', monospace;
 }
 
-/* Custom Scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A1929;
-  border-left: 1px solid #00B8D9;
+  background: #1E1E1E;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #00B8D9 0%, #0097B2 100%);
-  border: 2px solid #0A1929;
+  background: #3E3E42;
+  border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #00E5FF 0%, #00B8D9 100%);
+  background: #4E4E52;
 }
 
 /* Selection */
 ::selection {
-  background: rgba(0, 184, 217, 0.3);
-  color: #00E5FF;
+  background: #264F78;
+  color: white;
+}
+
+/* Status Indicators */
+.cad-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.cad-status-active {
+  background: #4EC9B0;
+}
+
+.cad-status-warning {
+  background: #CE9178;
+}
+
+.cad-status-error {
+  background: #F48771;
 }
