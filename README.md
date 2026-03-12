@@ -331,5 +331,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <div align="center">
   <strong>built for filipino riders</strong>
   <br />
-  <sub>Made by <a href="https://github.com/ampolperlada">ampolperlada</a></sub>
+  <sub>made by <a href="https://github.com/ampolperlada">ampolperlada</a></sub>
 </div>
