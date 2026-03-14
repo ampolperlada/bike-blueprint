@@ -24,16 +24,17 @@ export function useColorState() {
     setColors(DEFAULT_COLORS);
   }, []);
 
-  const randomizeColors = useCallback((presetColors: string[]) => {
-    const getRandomColor = () => presetColors[Math.floor(Math.random() * presetColors.length)];
-    setColors({
-      body: getRandomColor(),
-      wheels: getRandomColor(),
-      seat: getRandomColor(),
-      mirrors: getRandomColor(),
-      frame: getRandomColor()
-    });
-  }, []);
+const randomizeColors = useCallback((presetColors: string[]) => {
+  const getRandomColor = () => presetColors[Math.floor(Math.random() * presetColors.length)];
+  setColors({
+    body: getRandomColor(),
+    wheels: getRandomColor(),
+    seat: getRandomColor(),
+    mirrors: getRandomColor(),
+    frame: getRandomColor(),
+    exhaust: getRandomColor()  // ← ADD THIS LINE
+  });
+}, []);
 
   const toggleStockView = useCallback(() => {
     if (showStock) {
