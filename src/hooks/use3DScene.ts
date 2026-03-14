@@ -11,7 +11,7 @@ import {
 import { BikeColors } from '@/types/bike';
 
 export function use3DScene(
-  containerRef: React.RefObject<HTMLDivElement>,
+  containerRef: React.RefObject<HTMLDivElement | null>,
   colors: BikeColors
 ) {
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,8 @@ export function use3DScene(
     if (!containerRef.current) return;
 
     const container = containerRef.current;
+    if (!container) return; // Exit if container not ready
+    
     const scene = new THREE.Scene();
     
     // Background gradient
