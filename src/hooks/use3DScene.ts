@@ -22,7 +22,7 @@ export function use3DScene(
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const motorcyclePartsRef = useRef<Record<string, THREE.Mesh>>({});
-  const animationFrameRef = useRef<number>();
+const animationFrameRef = useRef<number>(0);
 
   // Initialize scene
   useEffect(() => {

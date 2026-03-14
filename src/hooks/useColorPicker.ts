@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { DEFAULT_COLORS } from '@/lib/constants/colors';
-import type { PartId } from '@/lib/constants/parts';
+import { DEFAULT_COLORS } from '@/types/bike';
+
+export type PartId = 'body' | 'wheels' | 'seat' | 'mirrors' | 'frame' | 'exhaust';
 
 export interface ColorState {
   body: string;
