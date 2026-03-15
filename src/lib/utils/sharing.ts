@@ -27,7 +27,8 @@ export function decodeBuildFromURL(): { colors: BikeColors | null; name: string 
       wheels: colorValues[1],
       seat: colorValues[2],
       mirrors: colorValues[3],
-      frame: colorValues[4]
+      frame: colorValues[4],
+      exhaust: colorValues[5]  
     },
     name
   };
