@@ -1,3 +1,15 @@
+<!-- Add to top of README -->
+<div align="center">
+
+![GitHub stars](https://img.shields.io/github/stars/ampolperlada/bike-blueprint?style=for-the-badge)
+![GitHub forks](https://img.shields.io/github/forks/ampolperlada/bike-blueprint?style=for-the-badge)
+![GitHub issues](https://img.shields.io/github/issues/ampolperlada/bike-blueprint?style=for-the-badge)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
+
+</div>
+
+
 # MotoPH Professional Studio
 
 > **3D Motorcycle Customization Platform** - Real-time color customization and e-commerce for Philippine motorcycle enthusiasts
