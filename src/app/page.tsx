@@ -1,261 +1,216 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  Maximize2, 
-  RotateCcw, 
-  Download, 
-  Save, 
-  Share2,
-  Settings,
-  Grid3x3
-} from 'lucide-react';
+import { useEffect } from 'react';
 
-import { Scene3DViewer } from '@/components/3d/Scene3DViewer';
-import { useColorState } from '@/hooks/useColorState';
-import { useBuildManager } from '@/hooks/useBuildManager';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { ColorPalettes } from '@/components/customizer/ColorPalettes';
+interface KeyboardShortcutCallbacks {
+  onExport?: () => void;
+  onSave?: () => void;
+  onReset?: () => void;
+  onRandomize?: () => void;
+  onShare?: () => void;
+  onToggleAutoRotate?: () => void;
+}
 
-import { PRESET_COLORS } from '@/lib/constants/colors';
-import { MOTORCYCLE_PARTS_CATALOG, MOTORCYCLE_PART_TYPES } from '@/lib/constants/parts';
-import { DEFAULT_COLORS } from '@/types/bike';
+export function useKeyboardShortcuts(callbacks: KeyboardShortcutCallbacks) {
+  useEffect(() => {
+    // Add CSS animations (only on client-side)
+    const styleId = 'keyboard-shortcuts-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
 
-export default function CADCustomizer() {
-  const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);
-
-  const {
-    colors,
-    setColors,                    // ← added (needed for ColorPalettes)
-    selectedPart,
-    setSelectedPart,
-    customColor,
-    setCustomColor,
-    applyColorToSelected,
-    resetColors,
-  } = useColorState();
-
-  const { buildName, setBuildName, saveBuild, shareBuild } = useBuildManager(DEFAULT_COLORS);
-
-  // ───────────────────────────────────────────────
-  // Keyboard shortcuts
-  // ───────────────────────────────────────────────
-  useKeyboardShortcuts({
-    onExport: handleDownload,
-    onSave: handleSave,
-    onReset: resetColors,
-    onRandomize: () => {
-      // Simple randomization across all parts
-      const randomColors = { ...colors };
-      Object.keys(randomColors).forEach((partId) => {
-        const randomPreset = PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
-        randomColors[partId] = randomPreset.hex;
-      });
-      setColors(randomColors);
-    },
-    onShare: handleShare,
-  });
-
-  const handleDownload = () => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return;
-    const dataURL = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = `${buildName.replace(/\s+/g, '-')}.png`;
-    link.href = dataURL;
-    link.click();
-  };
-
-  const handleSave = () => {
-    saveBuild(colors, selectedPartsForPurchase);
-  };
-
-  const handleShare = async () => {
-    await shareBuild(colors);
-  };
-
-  const handleTogglePart = (partId: string) => {
-    setSelectedPartsForPurchase(prev =>
-      prev.includes(partId) ? prev.filter(id => id !== partId) : [...prev, partId]
-    );
-  };
-
-  const handleToggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      document.exitFullscreen();
+        @keyframes slideOut {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
     }
-  };
 
-  const selectedPartLabel = MOTORCYCLE_PART_TYPES.find(p => p.id === selectedPart)?.label || 'Part';
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
 
-  return (
-    <div className="cad-layout">
-      {/* Top Toolbar */}
-      <div className="cad-toolbar">
-        <div className="cad-toolbar-left">
-          <span style={{ fontSize: '13px', fontWeight: 500 }}>Motorcycle Customizer</span>
-          <span style={{ fontSize: '11px', color: '#808080', marginLeft: '12px' }}>
-            NMAX 155
-          </span>
-        </div>
-        
-        <div className="cad-toolbar-right">
-          <button className="cad-tool-button" onClick={handleToggleFullscreen}>
-            <Maximize2 size={16} />
-          </button>
-          <button className="cad-tool-button" onClick={resetColors}>
-            <RotateCcw size={16} />
-          </button>
-          <button className="cad-tool-button">
-            <Settings size={16} />
-          </button>
-        </div>
-      </div>
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modKey = isMac ? e.metaKey : e.ctrlKey;
 
-      {/* 3D Viewer */}
-      <div className="cad-viewer">
-        <Scene3DViewer
-          colors={colors}
-          onToggleFullscreen={handleToggleFullscreen}
-        />
-        
-        {/* View Controls */}
-        <div className="cad-view-controls">
-          <button className="cad-view-button" title="Fullscreen">
-            <Maximize2 size={18} />
-          </button>
-          <button className="cad-view-button active" title="Auto Rotate">
-            <RotateCcw size={18} />
-          </button>
-          <button className="cad-view-button" title="Grid">
-            <Grid3x3 size={18} />
-          </button>
-        </div>
-        
-        {/* Info Overlay */}
-        <div className="cad-info-overlay">
-          <div>Model: NMAX 155 • Scale: 1:1</div>
-        </div>
-      </div>
+      // Ctrl/Cmd + E = Export
+      if (modKey && e.key === 'e') {
+        e.preventDefault();
+        callbacks.onExport?.();
+        showToast('Exporting image...');
+      }
 
-      {/* Right Sidebar */}
-      <div className="cad-sidebar">
-        {/* Components Section */}
-        <div className="cad-sidebar-section">
-          <div className="cad-section-title">Components</div>
-          {MOTORCYCLE_PART_TYPES.map((part) => (
-            <div
-              key={part.id}
-              className={`cad-component-item ${selectedPart === part.id ? 'selected' : ''}`}
-              onClick={() => setSelectedPart(part.id)}
-            >
-              <div className="cad-component-icon">
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#007ACC', fontFamily: 'monospace' }}>
-                  {part.icon}
-                </span>
-              </div>
-              <div className="cad-component-label">
-                <div className="cad-component-name">{part.label}</div>
-                <div className="cad-component-desc">{part.description}</div>
-              </div>
-              <div 
-                className={`cad-component-checkbox ${selectedPartsForPurchase.includes(part.id) ? 'checked' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleTogglePart(part.id);
-                }}
-              />
-            </div>
-          ))}
-        </div>
+      // Ctrl/Cmd + S = Save
+      if (modKey && e.key === 's') {
+        e.preventDefault();
+        callbacks.onSave?.();
+        showToast('Build saved!');
+      }
 
-        {/* Color Section */}
-        <div className="cad-sidebar-section">
-          <div className="cad-section-title">
-            Color • {selectedPartLabel}
+      // Ctrl/Cmd + Shift + S = Share
+      if (modKey && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        callbacks.onShare?.();
+        showToast('Share link copied!');
+      }
+
+      // R = Randomize colors
+      if (e.key === 'r' && !modKey && !e.shiftKey) {
+        callbacks.onRandomize?.();
+        showToast('Colors randomized!');
+      }
+
+      // ESC = Reset to defaults
+      if (e.key === 'Escape') {
+        callbacks.onReset?.();
+        showToast('Reset to defaults');
+      }
+
+      // Space = Toggle auto-rotate
+      if (e.key === ' ' && !modKey) {
+        e.preventDefault();
+        callbacks.onToggleAutoRotate?.();
+      }
+
+      // ? = Show keyboard shortcuts help
+      if (e.key === '?') {
+        showShortcutsHelp();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [callbacks]);
+}
+
+// Simple toast notification
+function showToast(message: string) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #252526;
+    color: #CCCCCC;
+    padding: 12px 20px;
+    border-radius: 6px;
+    border: 1px solid #3E3E42;
+    font-size: 13px;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+  `;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 2000);
+}
+
+// Show shortcuts help modal
+function showShortcutsHelp() {
+  const existing = document.getElementById('shortcuts-modal');
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'shortcuts-modal';
+  modal.innerHTML = `
+    <div style="
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    ">
+      <div style="
+        background: #252526;
+        border: 1px solid #3E3E42;
+        border-radius: 8px;
+        padding: 24px;
+        max-width: 500px;
+        width: 90%;
+      ">
+        <h2 style="color: #CCCCCC; margin: 0 0 20px; font-size: 18px;">
+          Keyboard Shortcuts
+        </h2>
+        <div style="color: #CCCCCC; font-size: 13px; line-height: 1.8;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #808080;">Export Image</span>
+            <kbd style="background: #1E1E1E; padding: 4px 8px; border-radius: 4px; border: 1px solid #3E3E42;">Ctrl/⌘ E</kbd>
           </div>
-          
-          {/* ← Added Color Palettes here */}
-          <ColorPalettes 
-            onApply={(newColors) => setColors(newColors)} 
-          />
-
-          {/* Color Grid */}
-          <div className="cad-color-grid" style={{ marginBottom: '16px', marginTop: '16px' }}>
-            {PRESET_COLORS.slice(0, 18).map((preset) => (
-              <button
-                key={preset.hex}
-                className={`cad-color-swatch ${colors[selectedPart] === preset.hex ? 'selected' : ''}`}
-                style={{ backgroundColor: preset.hex }}
-                onClick={() => applyColorToSelected(preset.hex)}
-                title={preset.name}
-              />
-            ))}
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #808080;">Save Build</span>
+            <kbd style="background: #1E1E1E; padding: 4px 8px; border-radius: 4px; border: 1px solid #3E3E42;">Ctrl/⌘ S</kbd>
           </div>
-
-          {/* Custom Color */}
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', color: '#808080', marginBottom: '8px' }}>
-              Custom Color
-            </div>
-            <input
-              type="color"
-              value={customColor}
-              onChange={(e) => {
-                setCustomColor(e.target.value);
-                applyColorToSelected(e.target.value);
-              }}
-              className="cad-color-input"
-            />
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #808080;">Share Build</span>
+            <kbd style="background: #1E1E1E; padding: 4px 8px; border-radius: 4px; border: 1px solid #3E3E42;">Ctrl/⌘ Shift S</kbd>
           </div>
-
-          {/* Hex Input */}
-          <input
-            type="text"
-            value={customColor}
-            onChange={(e) => setCustomColor(e.target.value)}
-            className="cad-text-input"
-            placeholder="#FF0000"
-            maxLength={7}
-          />
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #808080;">Randomize Colors</span>
+            <kbd style="background: #1E1E1E; padding: 4px 8px; border-radius: 4px; border: 1px solid #3E3E42;">R</kbd>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #808080;">Reset to Defaults</span>
+            <kbd style="background: #1E1E1E; padding: 4px 8px; border-radius: 4px; border: 1px solid #3E3E42;">ESC</kbd>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #808080;">Toggle Auto-Rotate</span>
+            <kbd style="background: #1E1E1E; padding: 4px 8px; border-radius: 4px; border: 1px solid #3E3E42;">Space</kbd>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #808080;">Show This Help</span>
+            <kbd style="background: #1E1E1E; padding: 4px 8px; border-radius: 4px; border: 1px solid #3E3E42;">?</kbd>
+          </div>
         </div>
-
-        {/* Build Name */}
-        <div className="cad-sidebar-section">
-          <div className="cad-section-title">Build Name</div>
-          <input
-            type="text"
-            value={buildName}
-            onChange={(e) => setBuildName(e.target.value)}
-            className="cad-text-input"
-            placeholder="My Custom Build"
-          />
-        </div>
-      </div>
-
-      {/* Bottom Action Bar */}
-      <div className="cad-action-bar">
-        <button className="cad-button-primary" onClick={handleDownload}>
-          <Download size={16} style={{ marginRight: '6px' }} />
-          Export
+        <button onclick="this.closest('#shortcuts-modal').remove()" style="
+          margin-top: 20px;
+          width: 100%;
+          padding: 8px;
+          background: #007ACC;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 13px;
+        ">
+          Got it!
         </button>
-        <button className="cad-button-secondary" onClick={handleSave}>
-          <Save size={16} style={{ marginRight: '6px', display: 'inline-block' }} />
-          Save
-        </button>
-        <button className="cad-button-secondary" onClick={handleShare}>
-          <Share2 size={16} style={{ marginRight: '6px', display: 'inline-block' }} />
-          Share
-        </button>
-        
-        <div style={{ flex: 1 }} />
-        
-        <span style={{ fontSize: '11px', color: '#808080' }}>
-          {selectedPartsForPurchase.length} parts selected
-        </span>
       </div>
     </div>
-  );
+  `;
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  document.body.appendChild(modal);
 }
