@@ -77,8 +77,25 @@ export default function CADCustomizer() {
     }
   };
 
+  // Apply palette colors → per-part update
+  const handleApplyPalette = (newColors: Record<string, string>) => {
+    // Option A: safest – update one part at a time
+    Object.entries(newColors).forEach(([partId, color]) => {
+      // Only apply if the part exists in current colors
+      if (partId in colors) {
+        // Assuming your hook exposes a general applyColor(partId, color)
+        // If not → temporarily fake it via applyColorToSelected after switching selectedPart
+        setSelectedPart(partId);     // ← switch selection
+        applyColorToSelected(color); // ← apply to current selected
+      }
+    });
+
+    // Option B: cleaner – if your hook has a batch setter
+    // setColors(prev => ({ ...prev, ...newColors }));
+  };
+
   // ───────────────────────────────────────────────
-  // ✅ Keyboard Shortcuts (MOVED HERE)
+  // Keyboard Shortcuts
   // ───────────────────────────────────────────────
   useKeyboardShortcuts({
     onExport: handleDownload,
@@ -86,13 +103,10 @@ export default function CADCustomizer() {
     onReset: resetColors,
     onRandomize: () => {
       const randomColors = { ...colors };
-
       Object.keys(randomColors).forEach((partId) => {
-        const randomPreset =
-          PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+        const randomPreset = PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
         randomColors[partId] = randomPreset.hex;
       });
-
       setColors(randomColors);
     },
     onShare: handleShare,
@@ -109,13 +123,7 @@ export default function CADCustomizer() {
           <span style={{ fontSize: '13px', fontWeight: 500 }}>
             Motorcycle Customizer
           </span>
-          <span
-            style={{
-              fontSize: '11px',
-              color: '#808080',
-              marginLeft: '12px',
-            }}
-          >
+          <span style={{ fontSize: '11px', color: '#808080', marginLeft: '12px' }}>
             NMAX 155
           </span>
         </div>
@@ -124,11 +132,9 @@ export default function CADCustomizer() {
           <button className="cad-tool-button" onClick={handleToggleFullscreen}>
             <Maximize2 size={16} />
           </button>
-
           <button className="cad-tool-button" onClick={resetColors}>
             <RotateCcw size={16} />
           </button>
-
           <button className="cad-tool-button">
             <Settings size={16} />
           </button>
@@ -142,22 +148,18 @@ export default function CADCustomizer() {
           onToggleFullscreen={handleToggleFullscreen}
         />
 
-        {/* View Controls */}
         <div className="cad-view-controls">
           <button className="cad-view-button" title="Fullscreen">
             <Maximize2 size={18} />
           </button>
-
           <button className="cad-view-button active" title="Auto Rotate">
             <RotateCcw size={18} />
           </button>
-
           <button className="cad-view-button" title="Grid">
             <Grid3x3 size={18} />
           </button>
         </div>
 
-        {/* Info Overlay */}
         <div className="cad-info-overlay">
           <div>Model: NMAX 155 • Scale: 1:1</div>
         </div>
@@ -172,35 +174,20 @@ export default function CADCustomizer() {
           {MOTORCYCLE_PART_TYPES.map(part => (
             <div
               key={part.id}
-              className={`cad-component-item ${
-                selectedPart === part.id ? 'selected' : ''
-              }`}
+              className={`cad-component-item ${selectedPart === part.id ? 'selected' : ''}`}
               onClick={() => setSelectedPart(part.id)}
             >
               <div className="cad-component-icon">
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: '#007ACC',
-                    fontFamily: 'monospace',
-                  }}
-                >
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#007ACC', fontFamily: 'monospace' }}>
                   {part.icon}
                 </span>
               </div>
-
               <div className="cad-component-label">
                 <div className="cad-component-name">{part.label}</div>
                 <div className="cad-component-desc">{part.description}</div>
               </div>
-
               <div
-                className={`cad-component-checkbox ${
-                  selectedPartsForPurchase.includes(part.id)
-                    ? 'checked'
-                    : ''
-                }`}
+                className={`cad-component-checkbox ${selectedPartsForPurchase.includes(part.id) ? 'checked' : ''}`}
                 onClick={e => {
                   e.stopPropagation();
                   handleTogglePart(part.id);
@@ -216,18 +203,14 @@ export default function CADCustomizer() {
             Color • {selectedPartLabel}
           </div>
 
-          <ColorPalettes onApply={newColors => setColors(newColors)} />
+          {/* Fixed palette handler */}
+          <ColorPalettes onApply={handleApplyPalette} />
 
-          <div
-            className="cad-color-grid"
-            style={{ marginBottom: '16px', marginTop: '16px' }}
-          >
+          <div className="cad-color-grid" style={{ marginBottom: '16px', marginTop: '16px' }}>
             {PRESET_COLORS.slice(0, 18).map(preset => (
               <button
                 key={preset.hex}
-                className={`cad-color-swatch ${
-                  colors[selectedPart] === preset.hex ? 'selected' : ''
-                }`}
+                className={`cad-color-swatch ${colors[selectedPart] === preset.hex ? 'selected' : ''}`}
                 style={{ backgroundColor: preset.hex }}
                 onClick={() => applyColorToSelected(preset.hex)}
                 title={preset.name}
@@ -237,16 +220,9 @@ export default function CADCustomizer() {
 
           {/* Custom Color */}
           <div style={{ marginBottom: '12px' }}>
-            <div
-              style={{
-                fontSize: '11px',
-                color: '#808080',
-                marginBottom: '8px',
-              }}
-            >
+            <div style={{ fontSize: '11px', color: '#808080', marginBottom: '8px' }}>
               Custom Color
             </div>
-
             <input
               type="color"
               value={customColor}
@@ -272,7 +248,6 @@ export default function CADCustomizer() {
         {/* Build Name */}
         <div className="cad-sidebar-section">
           <div className="cad-section-title">Build Name</div>
-
           <input
             type="text"
             value={buildName}
