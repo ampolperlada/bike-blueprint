@@ -10,9 +10,13 @@ import {
   Settings,
   Grid3x3
 } from 'lucide-react';
+
 import { Scene3DViewer } from '@/components/3d/Scene3DViewer';
 import { useColorState } from '@/hooks/useColorState';
 import { useBuildManager } from '@/hooks/useBuildManager';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { ColorPalettes } from '@/components/customizer/ColorPalettes';
+
 import { PRESET_COLORS } from '@/lib/constants/colors';
 import { MOTORCYCLE_PARTS_CATALOG, MOTORCYCLE_PART_TYPES } from '@/lib/constants/parts';
 import { DEFAULT_COLORS } from '@/types/bike';
@@ -22,6 +26,7 @@ export default function CADCustomizer() {
 
   const {
     colors,
+    setColors,                    // ← added (needed for ColorPalettes)
     selectedPart,
     setSelectedPart,
     customColor,
@@ -31,6 +36,25 @@ export default function CADCustomizer() {
   } = useColorState();
 
   const { buildName, setBuildName, saveBuild, shareBuild } = useBuildManager(DEFAULT_COLORS);
+
+  // ───────────────────────────────────────────────
+  // Keyboard shortcuts
+  // ───────────────────────────────────────────────
+  useKeyboardShortcuts({
+    onExport: handleDownload,
+    onSave: handleSave,
+    onReset: resetColors,
+    onRandomize: () => {
+      // Simple randomization across all parts
+      const randomColors = { ...colors };
+      Object.keys(randomColors).forEach((partId) => {
+        const randomPreset = PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+        randomColors[partId] = randomPreset.hex;
+      });
+      setColors(randomColors);
+    },
+    onShare: handleShare,
+  });
 
   const handleDownload = () => {
     const canvas = document.querySelector('canvas');
@@ -90,7 +114,7 @@ export default function CADCustomizer() {
         </div>
       </div>
 
-      {/* 3D Viewer - Full Screen */}
+      {/* 3D Viewer */}
       <div className="cad-viewer">
         <Scene3DViewer
           colors={colors}
@@ -116,7 +140,7 @@ export default function CADCustomizer() {
         </div>
       </div>
 
-      {/* Right Sidebar - Properties */}
+      {/* Right Sidebar */}
       <div className="cad-sidebar">
         {/* Components Section */}
         <div className="cad-sidebar-section">
@@ -153,8 +177,13 @@ export default function CADCustomizer() {
             Color • {selectedPartLabel}
           </div>
           
+          {/* ← Added Color Palettes here */}
+          <ColorPalettes 
+            onApply={(newColors) => setColors(newColors)} 
+          />
+
           {/* Color Grid */}
-          <div className="cad-color-grid" style={{ marginBottom: '16px' }}>
+          <div className="cad-color-grid" style={{ marginBottom: '16px', marginTop: '16px' }}>
             {PRESET_COLORS.slice(0, 18).map((preset) => (
               <button
                 key={preset.hex}
@@ -193,7 +222,7 @@ export default function CADCustomizer() {
           />
         </div>
 
-        {/* Build Info */}
+        {/* Build Name */}
         <div className="cad-sidebar-section">
           <div className="cad-section-title">Build Name</div>
           <input
