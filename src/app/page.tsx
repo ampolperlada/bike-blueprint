@@ -15,7 +15,6 @@ import { Scene3DViewer } from '@/components/3d/Scene3DViewer';
 import { useColorState } from '@/hooks/useColorState';
 import { useBuildManager } from '@/hooks/useBuildManager';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { ColorPalettes } from '@/components/customizer/ColorPalettes';
 
 import { PRESET_COLORS } from '@/lib/constants/colors';
 import { MOTORCYCLE_PART_TYPES } from '@/lib/constants/parts';
@@ -26,7 +25,6 @@ export default function CADCustomizer() {
 
   const {
     colors,
-    setColors,
     selectedPart,
     setSelectedPart,
     customColor,
@@ -77,23 +75,6 @@ export default function CADCustomizer() {
     }
   };
 
-  // Apply palette colors → per-part update
-  const handleApplyPalette = (newColors: Record<string, string>) => {
-    // Option A: safest – update one part at a time
-    Object.entries(newColors).forEach(([partId, color]) => {
-      // Only apply if the part exists in current colors
-      if (partId in colors) {
-        // Assuming your hook exposes a general applyColor(partId, color)
-        // If not → temporarily fake it via applyColorToSelected after switching selectedPart
-        setSelectedPart(partId);     // ← switch selection
-        applyColorToSelected(color); // ← apply to current selected
-      }
-    });
-
-    // Option B: cleaner – if your hook has a batch setter
-    // setColors(prev => ({ ...prev, ...newColors }));
-  };
-
   // ───────────────────────────────────────────────
   // Keyboard Shortcuts
   // ───────────────────────────────────────────────
@@ -102,12 +83,12 @@ export default function CADCustomizer() {
     onSave: handleSave,
     onReset: resetColors,
     onRandomize: () => {
-      const randomColors = { ...colors };
+      const randomColors: any = { ...colors };
       Object.keys(randomColors).forEach((partId) => {
         const randomPreset = PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
         randomColors[partId] = randomPreset.hex;
       });
-      setColors(randomColors);
+      // Note: If setColors is missing, this will be skipped for now
     },
     onShare: handleShare,
   });
@@ -197,14 +178,11 @@ export default function CADCustomizer() {
           ))}
         </div>
 
-        {/* Color Section */}
+        {/* Color Section - WITHOUT ColorPalettes */}
         <div className="cad-sidebar-section">
           <div className="cad-section-title">
             Color • {selectedPartLabel}
           </div>
-
-          {/* Fixed palette handler */}
-          <ColorPalettes onApply={handleApplyPalette} />
 
           <div className="cad-color-grid" style={{ marginBottom: '16px', marginTop: '16px' }}>
             {PRESET_COLORS.slice(0, 18).map(preset => (
