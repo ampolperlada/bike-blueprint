@@ -18,8 +18,8 @@ export function fitCameraToModel(
   controls: OrbitControls,
   model: THREE.Object3D,
   options: {
-    offset?: number; // Extra space around model (default 1.5)
-    centerY?: number; // Y-axis center point (default: model center)
+    offset?: number;
+    centerY?: number;
   } = {}
 ) {
   const { offset = 1.5, centerY } = options;
@@ -37,13 +37,13 @@ export function fitCameraToModel(
   // Calculate optimal distance
   const maxDim = Math.max(size.x, size.y, size.z);
   const fov = camera.fov * (Math.PI / 180);
-  let cameraZ = Math.abs(maxDim / Math.sin(fov / 2)) * offset;
+  const cameraZ = Math.abs(maxDim / Math.sin(fov / 2)) * offset;
 
   // Set camera position (slightly elevated angle)
   camera.position.set(
-    cameraZ * 0.7,  // X: Slight angle
-    cameraZ * 0.5,  // Y: Elevated view
-    cameraZ         // Z: Main distance
+    cameraZ * 0.7,
+    cameraZ * 0.5,
+    cameraZ
   );
 
   // Point camera at model center
@@ -97,7 +97,7 @@ export function animateCameraTo(
 }
 
 /**
- * Preset camera angles for quick views
+ * Preset camera angles
  */
 export const CAMERA_PRESETS = {
   front: { position: [0, 1.5, 4], target: [0, 0.8, 0] },
@@ -117,14 +117,14 @@ export function applyCameraPreset(
   animate: boolean = true
 ) {
   const { position, target } = CAMERA_PRESETS[preset];
-  const targetPos = new THREE.Vector3(...position);
-  const targetLookAt = new THREE.Vector3(...target);
+  const targetPos = new THREE.Vector3(position[0], position[1], position[2]);
+  const targetLookAt = new THREE.Vector3(target[0], target[1], target[2]);
 
   if (animate) {
     return animateCameraTo(camera, controls, targetPos, targetLookAt, 800);
   } else {
-    camera.position.set(...position);
-    controls.target.set(...target);
+    camera.position.set(position[0], position[1], position[2]);
+    controls.target.set(target[0], target[1], target[2]);
     controls.update();
     return Promise.resolve();
   }
