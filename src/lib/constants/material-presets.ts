@@ -106,16 +106,14 @@ export function applyMaterialPreset(
   material.metalness = presetData.properties.metalness;
   material.roughness = presetData.properties.roughness;
 
-  // Apply clearcoat if available
-  if (presetData.properties.clearcoat !== undefined) {
-    material.clearcoat = presetData.properties.clearcoat;
-    material.clearcoatRoughness = presetData.properties.clearcoatRoughness || 0;
-  } else {
-    material.clearcoat = 0;
+  // Apply clearcoat if material supports it (MeshPhysicalMaterial)
+  if ('clearcoat' in material && presetData.properties.clearcoat !== undefined) {
+    (material as any).clearcoat = presetData.properties.clearcoat;
+    (material as any).clearcoatRoughness = presetData.properties.clearcoatRoughness || 0;
   }
 
   // Environment map intensity
-  if (presetData.properties.envMapIntensity !== undefined) {
+  if ('envMapIntensity' in material && presetData.properties.envMapIntensity !== undefined) {
     material.envMapIntensity = presetData.properties.envMapIntensity;
   }
 
@@ -144,7 +142,7 @@ export function getMaterialFinish(mesh: THREE.Mesh): MaterialFinish {
   }
   
   // Gloss detection (clearcoat)
-  if (material.clearcoat > 0.5) {
+  if ('clearcoat' in material && (material as any).clearcoat > 0.5) {
     return 'gloss';
   }
   
