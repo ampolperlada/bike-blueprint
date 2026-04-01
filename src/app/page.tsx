@@ -1,5 +1,6 @@
 'use client';
-
+// Add at the top of page.tsx
+import './glassmorphism.css';
 import { useState } from 'react';
 import {
   Maximize2,
