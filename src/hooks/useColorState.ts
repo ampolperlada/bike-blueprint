@@ -24,33 +24,35 @@ export function useColorState() {
     setColors(DEFAULT_COLORS);
   }, []);
 
-const randomizeColors = useCallback((presetColors: string[]) => {
-  const getRandomColor = () => presetColors[Math.floor(Math.random() * presetColors.length)];
-  setColors({
-    body: getRandomColor(),
-    wheels: getRandomColor(),
-    seat: getRandomColor(),
-    mirrors: getRandomColor(),
-    frame: getRandomColor(),
-    exhaust: getRandomColor()  // ← ADD THIS LINE
-  });
-}, []);
+  const randomizeColors = useCallback((presetColors: string[]) => {
+    const getRandomColor = () => presetColors[Math.floor(Math.random() * presetColors.length)];
+
+    setColors({
+      body: getRandomColor(),
+      wheels: getRandomColor(),
+      seat: getRandomColor(),
+      mirrors: getRandomColor(),
+      frame: getRandomColor(),
+      exhaust: getRandomColor(),   // ← Added support for exhaust
+    });
+  }, []);
 
   const toggleStockView = useCallback(() => {
     if (showStock) {
-      // Switch back to custom
+      // Restore custom colors
       if (stockSnapshot) {
         setColors(stockSnapshot);
         setStockSnapshot(null);
       }
     } else {
-      // Switch to stock
+      // Save current custom colors and switch to stock
       setStockSnapshot({ ...colors });
       setColors(STOCK_COLORS);
     }
     setShowStock(!showStock);
   }, [showStock, colors, stockSnapshot]);
 
+  // Enable loading color themes / presets
   const loadColors = useCallback((newColors: BikeColors) => {
     setColors(newColors);
   }, []);
@@ -75,8 +77,8 @@ const randomizeColors = useCallback((presetColors: string[]) => {
     resetColors,
     randomizeColors,
     toggleStockView,
-    loadColors,
+    loadColors,           // ← Now properly exposed
     isPartCustomized,
-    getCustomizedParts
+    getCustomizedParts,
   };
 }
