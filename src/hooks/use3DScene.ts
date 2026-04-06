@@ -2,12 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { 
-  applyColorToMesh, 
-  detectPartType, 
+
+import {
+  applyColorToMesh,
+  detectPartType,
   enhanceMaterial,
-  centerAndScaleModel 
+  centerAndScaleModel,
 } from '@/lib/utils/3d-helpers';
+
+import { fitCameraToModel } from '@/lib/utils/camera-helpers'; // ← New import
+
 import { BikeColors } from '@/types/bike';
 
 export function use3DScene(
@@ -16,23 +20,21 @@ export function use3DScene(
 ) {
   const [loading, setLoading] = useState(true);
   const [autoRotate, setAutoRotate] = useState(true);
-  
+
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const motorcyclePartsRef = useRef<Record<string, THREE.Mesh>>({});
-const animationFrameRef = useRef<number>(0);
+  const animationFrameRef = useRef<number>(0);
 
   // Initialize scene
   useEffect(() => {
     if (!containerRef.current) return;
-
     const container = containerRef.current;
-    if (!container) return; // Exit if container not ready
-    
+
     const scene = new THREE.Scene();
-    
+
     // Background gradient
     const canvas = document.createElement('canvas');
     canvas.width = 2;
@@ -55,7 +57,7 @@ const animationFrameRef = useRef<number>(0);
       0.1,
       1000
     );
-    camera.position.set(5, 3, 8);
+    camera.position.set(5, 3, 8); // fallback position
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
@@ -63,7 +65,7 @@ const animationFrameRef = useRef<number>(0);
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      powerPreference: 'high-performance'
+      powerPreference: 'high-performance',
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -75,35 +77,33 @@ const animationFrameRef = useRef<number>(0);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Environment
+    // Environment (PMREM)
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
     const envScene = new THREE.Scene();
     envScene.background = new THREE.Color(0x1a1a2e);
     scene.environment = pmremGenerator.fromScene(envScene).texture;
 
-    // Lighting
+    // Lighting & Floor & Grid
     setupLighting(scene);
 
-    // Floor
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(50, 50),
       new THREE.MeshStandardMaterial({
         color: 0x0a0a0a,
         metalness: 0.6,
         roughness: 0.8,
-        envMapIntensity: 0.5
+        envMapIntensity: 0.5,
       })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Grid
     const grid = new THREE.GridHelper(30, 60, 0x1a1a1a, 0x0d0d0d);
     grid.position.y = 0.01;
-    grid.material.opacity = 0.5;
-    grid.material.transparent = true;
+    (grid.material as THREE.Material).opacity = 0.5;
+    (grid.material as THREE.Material).transparent = true;
     scene.add(grid);
 
     // Controls
@@ -118,9 +118,9 @@ const animationFrameRef = useRef<number>(0);
     controlsRef.current = controls;
 
     // Load model
-    loadModel(scene, motorcyclePartsRef, setLoading);
+    loadModel(scene, camera, controls, motorcyclePartsRef, setLoading);
 
-    // Animation
+    // Animation loop
     function animate() {
       animationFrameRef.current = requestAnimationFrame(animate);
       controls.update();
@@ -143,7 +143,9 @@ const animationFrameRef = useRef<number>(0);
         cancelAnimationFrame(animationFrameRef.current);
       }
       renderer.dispose();
-      container.removeChild(renderer.domElement);
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, [containerRef]);
 
@@ -152,7 +154,7 @@ const animationFrameRef = useRef<number>(0);
     const parts = motorcyclePartsRef.current;
     Object.entries(colors).forEach(([partName, color]) => {
       const mesh = parts[partName];
-      if (applyColorToMesh(mesh, color)) {
+      if (mesh && applyColorToMesh(mesh, color)) {
         console.log(`✅ Applied ${color} to ${partName}`);
       }
     });
@@ -184,10 +186,12 @@ const animationFrameRef = useRef<number>(0);
     setAutoRotate,
     resetCamera,
     captureScreenshot,
-    motorcyclePartsRef
+    motorcyclePartsRef,
   };
 }
 
+// ─────────────────────────────────────────────────────────────
+// Lighting setup (unchanged)
 function setupLighting(scene: THREE.Scene) {
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
@@ -226,21 +230,28 @@ function setupLighting(scene: THREE.Scene) {
   scene.add(accent2);
 }
 
+// ─────────────────────────────────────────────────────────────
+// Updated model loader with auto-fit
 function loadModel(
   scene: THREE.Scene,
+  camera: THREE.PerspectiveCamera,
+  controls: OrbitControls,
   partsRef: React.MutableRefObject<Record<string, THREE.Mesh>>,
   setLoading: (loading: boolean) => void
 ) {
   const loader = new GLTFLoader();
+
   loader.load(
     '/models/nmax_motorbike/scene.gltf',
     (gltf) => {
       const model = gltf.scene;
+
+      // Center + scale the model first
       const { scale: modelScale, position } = centerAndScaleModel(model);
-      
       model.scale.set(modelScale, modelScale, modelScale);
       model.position.copy(position);
 
+      // Traverse to set shadows, enhance materials, and detect parts
       const meshByIndex: Record<number, THREE.Mesh> = {};
       let meshIndex = 0;
 
@@ -250,24 +261,25 @@ function loadModel(
           child.receiveShadow = true;
 
           if (child.material) {
-            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            const materials = Array.isArray(child.material)
+              ? child.material
+              : [child.material];
             materials.forEach(enhanceMaterial);
           }
 
           meshByIndex[meshIndex] = child;
           partsRef.current[`mesh_${meshIndex}`] = child;
-          
+
           const partType = detectPartType(child.name);
           if (partType && !partsRef.current[partType]) {
             partsRef.current[partType] = child;
             console.log(`✅ Auto-detected ${partType}:`, child.name);
           }
-
           meshIndex++;
         }
       });
 
-      // Fallback assignment
+      // Fallback assignments
       const partTypes = ['body', 'wheels', 'seat', 'mirrors', 'frame'];
       partTypes.forEach((partType, index) => {
         if (!partsRef.current[partType] && meshByIndex[index]) {
@@ -276,9 +288,17 @@ function loadModel(
         }
       });
 
+      // Add to scene
       scene.add(model);
+
+      // ← Auto-fit camera to the model
+      fitCameraToModel(camera, controls, model, { offset: 1.3 });
+
       setLoading(false);
-      console.log('✅ Model loaded. Parts:', Object.keys(partsRef.current).filter(k => !k.startsWith('mesh_')));
+      console.log(
+        '✅ Model loaded. Parts:',
+        Object.keys(partsRef.current).filter((k) => !k.startsWith('mesh_'))
+      );
     },
     undefined,
     (error) => {
