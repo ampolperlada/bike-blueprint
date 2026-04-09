@@ -22,7 +22,7 @@ import { MOTORCYCLE_PART_TYPES } from '@/lib/constants/parts';
 import { DEFAULT_COLORS } from '@/types/bike';
 
 // New Import
-import { ColorPalettes } from '@/components/ColorPalettes';   // ← Add this
+import { ColorPalettes } from '@/components/customizer/ColorPalettes';
 
 export default function CADCustomizer() {
   const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);

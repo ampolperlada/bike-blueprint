@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -10,7 +10,9 @@ import {
   centerAndScaleModel,
 } from '@/lib/utils/3d-helpers';
 
-import { fitCameraToModel } from '@/lib/utils/camera-helpers'; // ← New import
+import { fitCameraToModel } from '@/lib/utils/camera-helpers';
+import { partHighlighter } from '@/lib/utils/part-highlighter';
+import { PartType } from '@/types/parts';
 
 import { BikeColors } from '@/types/bike';
 
@@ -84,7 +86,7 @@ export function use3DScene(
     envScene.background = new THREE.Color(0x1a1a2e);
     scene.environment = pmremGenerator.fromScene(envScene).texture;
 
-    // Lighting & Floor & Grid
+    // Lighting, Floor & Grid
     setupLighting(scene);
 
     const floor = new THREE.Mesh(
@@ -167,6 +169,24 @@ export function use3DScene(
     }
   }, [autoRotate]);
 
+  // ====================== PART HIGHLIGHTING ======================
+  const highlightPart = useCallback((partType: PartType) => {
+    partHighlighter.highlightPartsByType(motorcyclePartsRef.current, partType);
+  }, []);
+
+  const unhighlightPart = useCallback((partType: PartType) => {
+    partHighlighter.unhighlightPartsByType(motorcyclePartsRef.current, partType);
+  }, []);
+
+  const selectPart = useCallback((partType: PartType) => {
+    partHighlighter.selectPartsByType(motorcyclePartsRef.current, partType);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    partHighlighter.clearSelection();
+  }, []);
+
+  // ====================== UTILITY FUNCTIONS ======================
   const resetCamera = () => {
     if (cameraRef.current && controlsRef.current) {
       cameraRef.current.position.set(5, 3, 8);
@@ -187,11 +207,21 @@ export function use3DScene(
     resetCamera,
     captureScreenshot,
     motorcyclePartsRef,
+
+    // New highlighting functions
+    highlightPart,
+    unhighlightPart,
+    selectPart,
+    clearSelection,
+
+    // Optional: Expose camera & controls for future use
+    // camera: cameraRef.current,
+    // controls: controlsRef.current,
   };
 }
 
 // ─────────────────────────────────────────────────────────────
-// Lighting setup (unchanged)
+// Lighting setup
 function setupLighting(scene: THREE.Scene) {
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
@@ -246,12 +276,21 @@ function loadModel(
     (gltf) => {
       const model = gltf.scene;
 
-      // Center + scale the model first
+      // Center and scale model
       const { scale: modelScale, position } = centerAndScaleModel(model);
       model.scale.set(modelScale, modelScale, modelScale);
       model.position.copy(position);
 
-      // Traverse to set shadows, enhance materials, and detect parts
+      // Add to scene first
+      scene.add(model);
+
+      // Auto-fit camera to model (after adding to scene)
+      fitCameraToModel(camera, controls, model, {
+        offset: 1.3,
+        centerY: 0.8,
+      });
+
+      // Traverse to setup meshes and detect parts
       const meshByIndex: Record<number, THREE.Mesh> = {};
       let meshIndex = 0;
 
@@ -279,20 +318,14 @@ function loadModel(
         }
       });
 
-      // Fallback assignments
-      const partTypes = ['body', 'wheels', 'seat', 'mirrors', 'frame'];
+      // Fallback part assignments
+      const partTypes = ['body', 'wheels', 'seat', 'mirrors', 'frame', 'exhaust'];
       partTypes.forEach((partType, index) => {
         if (!partsRef.current[partType] && meshByIndex[index]) {
           partsRef.current[partType] = meshByIndex[index];
           console.log(`⚠️ Fallback: mesh_${index} → ${partType}`);
         }
       });
-
-      // Add to scene
-      scene.add(model);
-
-      // ← Auto-fit camera to the model
-      fitCameraToModel(camera, controls, model, { offset: 1.3 });
 
       setLoading(false);
       console.log(
