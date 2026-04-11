@@ -16,17 +16,18 @@ import { Scene3DViewer } from '@/components/3d/Scene3DViewer';
 import { useColorState } from '@/hooks/useColorState';
 import { useBuildManager } from '@/hooks/useBuildManager';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { use3DScene } from '@/hooks/use3DScene';   // ← New import
 
 import { PRESET_COLORS } from '@/lib/constants/colors';
 import { MOTORCYCLE_PART_TYPES } from '@/lib/constants/parts';
 import { DEFAULT_COLORS } from '@/types/bike';
 
-// New Import
 import { ColorPalettes } from '@/components/customizer/ColorPalettes';
 
 export default function CADCustomizer() {
   const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);
 
+  // Color State
   const {
     colors,
     selectedPart,
@@ -35,8 +36,17 @@ export default function CADCustomizer() {
     setCustomColor,
     applyColorToSelected,
     resetColors,
-    loadColors,           // ← Added
+    loadColors,
   } = useColorState();
+
+  // 3D Scene with highlighting support
+  const {
+    loading,
+    highlightPart,
+    unhighlightPart,
+    selectPart,
+    resetCamera,        // Optional: you can use later
+  } = use3DScene({ current: document.querySelector('.cad-viewer') as HTMLDivElement | null }, colors);  // Adjust ref as needed
 
   const { buildName, setBuildName, saveBuild, shareBuild } =
     useBuildManager(DEFAULT_COLORS);
@@ -93,7 +103,7 @@ export default function CADCustomizer() {
         const randomPreset = PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
         randomColors[partId] = randomPreset.hex;
       });
-      // TODO: Use loadColors or setColors from hook when available
+      loadColors(randomColors);   // ← Better: use loadColors
     },
     onShare: handleShare,
   });
@@ -153,7 +163,7 @@ export default function CADCustomizer() {
 
       {/* Right Sidebar */}
       <div className="cad-sidebar">
-        {/* Components */}
+        {/* Components / Parts List with Hover & Selection Effects */}
         <div className="cad-sidebar-section">
           <div className="cad-section-title">Components</div>
 
@@ -161,7 +171,12 @@ export default function CADCustomizer() {
             <div
               key={part.id}
               className={`cad-component-item ${selectedPart === part.id ? 'selected' : ''}`}
-              onClick={() => setSelectedPart(part.id)}
+              onClick={() => {
+                setSelectedPart(part.id);
+                selectPart(part.id);           // Visual selection
+              }}
+              onMouseEnter={() => highlightPart(part.id)}
+              onMouseLeave={() => unhighlightPart(part.id)}
             >
               <div className="cad-component-icon">
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#007ACC', fontFamily: 'monospace' }}>
@@ -183,14 +198,14 @@ export default function CADCustomizer() {
           ))}
         </div>
 
-        {/* Color Section - Now includes ColorPalettes */}
+        {/* Color Section */}
         <div className="cad-sidebar-section">
           <div className="cad-section-title">
             Color • {selectedPartLabel}
           </div>
 
           {/* Color Themes / Palettes */}
-          <ColorPalettes onApply={loadColors} />   {/* ← Added here */}
+          <ColorPalettes onApply={loadColors} />
 
           <div className="cad-color-grid" style={{ marginBottom: '16px', marginTop: '16px' }}>
             {PRESET_COLORS.slice(0, 18).map(preset => (
@@ -244,28 +259,39 @@ export default function CADCustomizer() {
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
-      <div className="cad-action-bar">
-        <button className="cad-button-primary" onClick={handleDownload}>
-          <Download size={16} style={{ marginRight: '6px' }} />
-          Export
-        </button>
-
-        <button className="cad-button-secondary" onClick={handleSave}>
-          <Save size={16} style={{ marginRight: '6px' }} />
-          Save
-        </button>
-
-        <button className="cad-button-secondary" onClick={handleShare}>
-          <Share2 size={16} style={{ marginRight: '6px' }} />
-          Share
-        </button>
-
-        <div style={{ flex: 1 }} />
-
-        <span style={{ fontSize: '11px', color: '#808080' }}>
-          {selectedPartsForPurchase.length} parts selected
-        </span>
+      {/* Bottom Action Bar - Glassmorphism Style */}
+      <div className="action-bar-glass">
+        <div className="action-bar-content">
+          <button 
+            className="action-button action-button-primary" 
+            onClick={handleDownload}
+            disabled={loading}
+            title="Export HD Image (Ctrl+E)"
+          >
+            <Download size={18} />
+            <span>Export</span>
+          </button>
+          
+          <button 
+            className="action-button action-button-secondary" 
+            onClick={handleSave}
+            disabled={loading}
+            title="Save Build (Ctrl+S)"
+          >
+            <Save size={18} />
+            <span>Save</span>
+          </button>
+          
+          <button 
+            className="action-button action-button-secondary" 
+            onClick={handleShare}
+            disabled={loading}
+            title="Share Build (Ctrl+Shift+S)"
+          >
+            <Share2 size={18} />
+            <span>Share</span>
+          </button>
+        </div>
       </div>
     </div>
   );
