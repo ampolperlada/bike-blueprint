@@ -1,7 +1,8 @@
 'use client';
 
-import './glassmorphism.css';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import './glassmorphism.css';                    // ← Fixed CSS import
+
 import {
   Maximize2,
   RotateCcw,
@@ -16,7 +17,7 @@ import { Scene3DViewer } from '@/components/3d/Scene3DViewer';
 import { useColorState } from '@/hooks/useColorState';
 import { useBuildManager } from '@/hooks/useBuildManager';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { use3DScene } from '@/hooks/use3DScene';   // ← New import
+import { use3DScene } from '@/hooks/use3DScene';
 
 import { PRESET_COLORS } from '@/lib/constants/colors';
 import { MOTORCYCLE_PART_TYPES } from '@/lib/constants/parts';
@@ -26,6 +27,9 @@ import { ColorPalettes } from '@/components/customizer/ColorPalettes';
 
 export default function CADCustomizer() {
   const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);
+
+  // Ref for the 3D viewer container (fixes "document is not defined")
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Color State
   const {
@@ -39,14 +43,14 @@ export default function CADCustomizer() {
     loadColors,
   } = useColorState();
 
-  // 3D Scene with highlighting support
+  // 3D Scene Hook
   const {
     loading,
     highlightPart,
     unhighlightPart,
     selectPart,
-    resetCamera,        // Optional: you can use later
-  } = use3DScene({ current: document.querySelector('.cad-viewer') as HTMLDivElement | null }, colors);  // Adjust ref as needed
+    resetCamera,
+  } = use3DScene(containerRef, colors);
 
   const { buildName, setBuildName, saveBuild, shareBuild } =
     useBuildManager(DEFAULT_COLORS);
@@ -98,12 +102,12 @@ export default function CADCustomizer() {
     onSave: handleSave,
     onReset: resetColors,
     onRandomize: () => {
-      const randomColors: any = { ...colors };
+      const randomColors = { ...colors };
       Object.keys(randomColors).forEach((partId) => {
         const randomPreset = PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
         randomColors[partId] = randomPreset.hex;
       });
-      loadColors(randomColors);   // ← Better: use loadColors
+      loadColors(randomColors);
     },
     onShare: handleShare,
   });
@@ -137,8 +141,8 @@ export default function CADCustomizer() {
         </div>
       </div>
 
-      {/* 3D Viewer */}
-      <div className="cad-viewer">
+      {/* 3D Viewer - with ref */}
+      <div ref={containerRef} className="cad-viewer">
         <Scene3DViewer
           colors={colors}
           onToggleFullscreen={handleToggleFullscreen}
@@ -163,7 +167,7 @@ export default function CADCustomizer() {
 
       {/* Right Sidebar */}
       <div className="cad-sidebar">
-        {/* Components / Parts List with Hover & Selection Effects */}
+        {/* Components / Parts List */}
         <div className="cad-sidebar-section">
           <div className="cad-section-title">Components</div>
 
@@ -173,7 +177,7 @@ export default function CADCustomizer() {
               className={`cad-component-item ${selectedPart === part.id ? 'selected' : ''}`}
               onClick={() => {
                 setSelectedPart(part.id);
-                selectPart(part.id);           // Visual selection
+                selectPart(part.id);
               }}
               onMouseEnter={() => highlightPart(part.id)}
               onMouseLeave={() => unhighlightPart(part.id)}
@@ -204,7 +208,6 @@ export default function CADCustomizer() {
             Color • {selectedPartLabel}
           </div>
 
-          {/* Color Themes / Palettes */}
           <ColorPalettes onApply={loadColors} />
 
           <div className="cad-color-grid" style={{ marginBottom: '16px', marginTop: '16px' }}>
@@ -235,7 +238,6 @@ export default function CADCustomizer() {
             />
           </div>
 
-          {/* Hex Input */}
           <input
             type="text"
             value={customColor}
@@ -259,7 +261,7 @@ export default function CADCustomizer() {
         </div>
       </div>
 
-      {/* Bottom Action Bar - Glassmorphism Style */}
+      {/* Bottom Action Bar */}
       <div className="action-bar-glass">
         <div className="action-bar-content">
           <button 
