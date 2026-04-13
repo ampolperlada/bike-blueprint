@@ -2,17 +2,17 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        
-        // Blueprint Theme Colors
+
+        // Blueprint Theme
         'bp-bg': {
           primary: '#0A1929',
           secondary: '#0D2136',
@@ -38,22 +38,22 @@ const config: Config = {
         },
       },
       fontFamily: {
-        technical: ['"Share Tech Mono"', 'Courier New', 'monospace'],
-        heading: ['"Orbitron"', 'Roboto Mono', 'monospace'],
+        technical: ['"Share Tech Mono"', 'monospace'],
+        heading: ['"Orbitron"', 'monospace'],
         code: ['"JetBrains Mono"', 'monospace'],
       },
       animation: {
-        'border-flow': 'border-flow 1s linear infinite',
-        'scan': 'scan 2s ease-in-out infinite',
+        'border-flow': 'border-flow 1.5s linear infinite',
+        'scan': 'scan 2.5s ease-in-out infinite',
       },
       keyframes: {
         'border-flow': {
-          '0%': { backgroundPosition: '0 0' },
-          '100%': { backgroundPosition: '100px 100px' },
+          '0%': { backgroundPosition: '0% 0%' },
+          '100%': { backgroundPosition: '200% 200%' },
         },
         'scan': {
           '0%': { transform: 'translateY(-100%)' },
-          '100%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(300%)' },
         },
       },
     },

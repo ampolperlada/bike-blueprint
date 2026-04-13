@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import './glassmorphism.css';                    // ← Fixed CSS import
+
 
 import {
   Maximize2,
@@ -28,7 +28,6 @@ import { ColorPalettes } from '@/components/customizer/ColorPalettes';
 export default function CADCustomizer() {
   const [selectedPartsForPurchase, setSelectedPartsForPurchase] = useState<string[]>([]);
 
-  // Ref for the 3D viewer container (fixes "document is not defined")
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Color State
@@ -43,7 +42,7 @@ export default function CADCustomizer() {
     loadColors,
   } = useColorState();
 
-  // 3D Scene Hook
+  // 3D Scene
   const {
     loading,
     highlightPart,
@@ -80,9 +79,7 @@ export default function CADCustomizer() {
 
   const handleTogglePart = (partId: string) => {
     setSelectedPartsForPurchase(prev =>
-      prev.includes(partId)
-        ? prev.filter(id => id !== partId)
-        : [...prev, partId]
+      prev.includes(partId) ? prev.filter(id => id !== partId) : [...prev, partId]
     );
   };
 
@@ -103,10 +100,13 @@ export default function CADCustomizer() {
     onReset: resetColors,
     onRandomize: () => {
       const randomColors = { ...colors };
+
       Object.keys(randomColors).forEach((partId) => {
         const randomPreset = PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
-        randomColors[partId] = randomPreset.hex;
+        // Fix: Type assertion to allow string indexing
+        (randomColors as any)[partId] = randomPreset.hex;
       });
+
       loadColors(randomColors);
     },
     onShare: handleShare,
@@ -141,7 +141,7 @@ export default function CADCustomizer() {
         </div>
       </div>
 
-      {/* 3D Viewer - with ref */}
+      {/* 3D Viewer */}
       <div ref={containerRef} className="cad-viewer">
         <Scene3DViewer
           colors={colors}
@@ -167,7 +167,6 @@ export default function CADCustomizer() {
 
       {/* Right Sidebar */}
       <div className="cad-sidebar">
-        {/* Components / Parts List */}
         <div className="cad-sidebar-section">
           <div className="cad-section-title">Components</div>
 
@@ -222,7 +221,6 @@ export default function CADCustomizer() {
             ))}
           </div>
 
-          {/* Custom Color */}
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontSize: '11px', color: '#808080', marginBottom: '8px' }}>
               Custom Color
